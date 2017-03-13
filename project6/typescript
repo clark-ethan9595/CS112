@@ -1,0 +1,2752 @@
+Script started on Mon 30 Mar 2015 09:18:49 PM EDT
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ ls
+[0m[01;34mDebug[0m              readFromStringEx.txt  vecStreamOut.txt  VecTester.cpp
+List.h             sampleLists.txt       vecTest1Copy.txt  VecTester.h
+ListTester.cpp     tester.cpp            vecTest1.txt
+ListTester.h       typescript            vecTest2Copy.txt
+output_stream.txt  Vec.h                 vecTest2.txt
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cat l[KList.h
+/*
+ * List.h
+ *
+ *  Created on: Mar 10, 2015
+ *      Author: Johan Sung (jcs56)
+ */
+
+#ifndef LIST_H_
+#define LIST_H_
+
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <fstream>
+#include <cassert>
+
+using namespace std;
+
+template <class Item>
+
+class List{
+public:
+	List();
+	~List();
+	List(const List& original);
+	void append(const Item& it);
+	unsigned getSize() const;
+	Item getFirst() const;
+	Item getLast() const;
+	List& operator=(const List& original);
+	bool operator==(const List& list2);
+	bool operator!=(const List& list2);
+	void readFrom(istream& in);
+	void writeTo(ostream& out);
+	void readFrom(const string& fileName);
+	void writeTo(const string& fileName);
+	void prepend(Item it);
+	int getIndexOf(Item it) const;
+	void insert(Item it, int index);
+	Item remove(unsigned index);
+
+private:
+	struct Node {
+		Node();
+		~Node();
+		Node(Item it, Node * next);
+		Item myItem;
+		Node * myNext;
+	};
+	unsigned mySize;
+	Node * myFirst;
+	Node * myLast;
+//	grant access to ListTester to
+	friend class ListTester;
+
+};
+
+template <class Item>
+List<Item>::List() {
+	mySize = 0;			//	assign intialized values for default List
+	myFirst = NULL;
+	myLast = NULL;
+}
+
+template <class Item>
+List<Item>::Node::Node() {
+	myItem = 0;			//	assign initialized values for default Node
+	myNext = NULL;
+}
+
+template <class Item>
+List<Item>::Node::Node(Item it, Node * next) {
+	myItem = it;		//	assigns desired values for explicit Node
+	myNext = next;
+}
+
+template <class Item>
+unsigned List<Item>::getSize() const{
+	return mySize;		//	returns value of mySize
+}
+
+template <class Item>
+Item List<Item>::getFirst() const{
+	if (mySize < 0 || myFirst == NULL){		//	checks to see if list is empty. if true, throw an error
+		throw underflow_error ("List is empty or nonexistent");
+	} else {								//	otherwise return first node
+		return myFirst->myItem;
+	}
+}
+
+template <class Item>
+Item List<Item>::getLast() const{
+	if (mySize < 0 || myLast == NULL){		//	checks to see if list is empty. if true, throw an error
+		throw underflow_error ("List is empty or nonexistent");
+	} else {								//	otherwise return last node
+		return myLast->myItem;
+	}
+}
+
+template <class Item>
+void List<Item>::append(const Item& it) {
+	Node * nodePtr = new Node (it, NULL);	//	allocate a new node in which myItem is it and myNext is NULL
+	if (mySize == 0) {						//	if list is empty, make myFirst point at new node
+		myFirst = nodePtr;
+	} else {								//	Otherwise make myLast->myNext point at new node
+		myLast->myNext = nodePtr;
+	}
+	myLast = nodePtr;						// make myLast point at new node
+	mySize++;								// increment mySize
+}
+
+template <class Item>
+List<Item>::~List() {
+	delete myFirst;          // delete first node, invoking ~Node() (does nothing if myFirst == NULL)
+	myFirst = myLast = NULL; // clear myFirst and myLast (optional)
+	mySize = 0;              // clear mySize (optional)
+}
+
+template <class Item>
+List<Item>::Node::~Node() {
+	delete myNext;  // delete the next node, invoking ~Node() in it
+	// (does nothing if myNext == NULL)
+	myNext = NULL;  // clear myNext (optional)
+	myItem = 0;     // clear myItem (optional)
+}
+
+template <class Item>
+List<Item>::List(const List& original) {
+	myFirst = myLast = NULL;          //  set pointers
+	mySize = 0;                       //   and size to 'empty' values
+	if (original.getSize() > 0) {     //  if there are nodes to copy:
+		Node* oPtr = original.myFirst; //  start at the first node
+		while (oPtr != NULL) {         //  while there are more nodes:
+			append(oPtr->myItem);       //   append the item in that node
+			oPtr = oPtr->myNext;        //   advance to next node
+		}
+	}
+}
+
+template <class Item>
+List<Item>& List<Item>::operator=(const List<Item>& original){
+	if (&original != this) {				//	check that the two lists don't share the same address
+		delete myFirst;						//	deallocate my chain of nodes
+		myFirst = myLast =NULL;				// 	set myFirst and myLast to NULL
+		mySize = 0;							// 	set mySize to 0
+		if (original.getSize() > 0) {		//	if original is not empty
+			Node* nPtr = original.myFirst;	//	declare nPtr containing the address of original's first node
+			while (nPtr != NULL) {			// 	while nPtr is pointing at something
+				append(nPtr->myItem);		//	append a copy of the item in the node to which nPtr is pointing
+				nPtr = nPtr->myNext;		//	advance nPtr to next node
+			}
+		}
+	}
+	return *this;							// return dereferenced address of List
+}
+
+/* By Amber Bingle
+ * operator==
+ *   equality operator, for comparison of two list objects
+ *
+ * @param:  list2, the const reference to a list object to which this is being compared
+ * @return: returns true if each item in this is equivalent to the corresponding item in list2
+ * 			returns false otherwise
+ */
+template <class Item>
+bool List<Item>::operator==(const List<Item>& list2)
+{
+	if (mySize != list2.mySize)
+	{
+		return false;
+	}
+	else
+	{
+		Node * itemIn1 = myFirst;
+
+		Node * itemIn2 = list2.myFirst;
+		for (unsigned i = 0; i < mySize; i++)
+		{
+			if (itemIn1->myItem != itemIn2->myItem)
+			{
+				return false;
+			}
+			itemIn1 = itemIn1->myNext;
+			itemIn2 = itemIn2->myNext;
+		}
+		return true;
+	}
+}
+
+/* By Johan Sung
+ * operator!=
+ *   inequality operator, for comparison of two list objects
+ *
+ * @param:  list2, the const reference to a list object to which this is being compared
+ * @return: returns true if each item in this is inequivalent to the corresponding item in list2
+ * 			returns false otherwise
+ */
+template <class Item>
+bool List<Item>::operator!=(const List& list2) {
+	if (mySize == list2.mySize) {
+		return true;
+	} else {
+		Node * itemIn1 = myFirst;
+		Node * itemIn2 = list2.myFirst;
+		for (unsigned i = 0; i < mySize; i++)
+		{
+			if (itemIn1->myItem != itemIn2->myItem)
+			{
+				return true;
+			}
+			itemIn1 = itemIn1->myNext;
+			itemIn2 = itemIn2->myNext;
+		}
+		return false;
+	}
+}
+
+/* By Amber Bingle
+ * readFrom() reads values from a stream separated by whitespace into a list.
+ *   Reads until a new line character is encountered, and eats that new line
+ *
+ * @param: in, a reference to the istream to be read from
+ */
+template <class Item>
+void List<Item>::readFrom(istream& in) {
+	if(mySize != 0) {
+		delete myFirst;
+		myFirst = myLast = NULL;
+		mySize = 0;
+	}
+	Item newItem;
+	char look;
+	string newLine;
+	while (true)
+	{
+		look = in.peek();
+		if (look == '\n')
+		{
+			// eats the new line character so subsequent readFrom()
+			// calls for that stream do not read an empty list
+			getline(in, newLine);
+			break;
+		}
+		in >> newItem;
+		append(newItem);
+	}
+}
+
+/* By Johan Sung
+ * writeTo() writes out to an ostream
+ *   takes given values and writes out to an indicated ostream
+ *
+ * @param:  out, the specified ostream
+ */
+template <class Item>
+void List<Item>::writeTo(ostream& out) {
+	Node * oPtr = myFirst;
+	for (unsigned i =0; i < mySize; i++) {
+		if(oPtr->myNext == NULL) {
+			out << oPtr->myItem << '\n';
+		} else {
+			out << oPtr->myItem << '\t';
+			oPtr = oPtr->myNext;
+		}
+	}
+}
+
+/* By Johan Sung
+ * readFrom() reads values from an existing file given its file name
+ *   Reads until a space is encountered, and eats that space
+ *
+ * @param: fileName, the name of the file used to read from
+ */
+template <class Item>
+void List<Item>::readFrom(const string& fileName) {
+	if(mySize != 0) {
+		delete myFirst;
+		myFirst = myLast = NULL;
+		mySize = 0;
+	}
+	Item newItem;
+	char look;
+	string newLine;
+	ifstream fin(fileName.c_str());
+	assert(fin.is_open());
+	while (true)
+	{
+		look = fin.peek();
+		if (look == ' ')
+		{
+			// eats the space so subsequent readFrom()
+			// calls for that stream do not read an empty list
+			getline(fin, newLine);
+			break;
+		}
+		fin >> newItem;
+		append(newItem);
+	}
+	fin.close();
+
+}
+
+/* By Amber Bingle
+ * Modified by Johan Sung
+ * writeTo() writes the items in a list into a file, each item on a new line
+ *
+ * @param: fileName, a string containing the name of the file to be written to
+ * Postcondition: a file of the name fileName is created (or written over)
+ *                containing the items from the list, each on its own line
+ */
+template <class Item>
+void List<Item>::writeTo(const string& fileName)
+{
+	ofstream fout(fileName.c_str());
+	assert(fout.is_open());
+	Node * current = myFirst;
+	while (current != NULL)
+	{
+		fout << current->myItem;
+		current = current->myNext;
+		if (current != NULL)
+		{
+			fout << ' ';
+		}
+	}
+}
+
+/* By Amber Bingle
+ * prepend() adds a new item to the beginning of a list
+ *
+ * @param: it, an Item to be added to the list
+ * Postcondition: the Item it is stored in a new Node in the myFirst position of the
+ *                List object, with its myNext pointing to the Node which used to be myFirst
+ */
+template <class Item>
+void List<Item>::prepend(Item it)
+{
+	Node * nodePtr = new Node(it, NULL);
+	if (mySize == 0)
+	{
+		myFirst = myLast = nodePtr;
+	}
+	else
+	{
+		Node * oldFirst = myFirst;
+		myFirst = nodePtr;
+		myFirst->myNext = oldFirst;
+	}
+	mySize++;
+}
+
+
+/* By Johan Sung
+ * getIndexOf() is given a value and returns its index in the list
+ *   If the item is non existant in the list, returns -1
+ *
+ * @param: it, a reference to the specified item within the list
+ * @return: i, the index of a specified item
+ * 		   -1, the value returned if requested item does not exist within list
+ */
+template <class Item>
+int List<Item>::getIndexOf(Item it) const{
+	Node* oPtr = myFirst;
+	for (unsigned i= 0; i < mySize; i++) {
+		if (it == oPtr->myItem) {
+			return i;
+		}
+		else if (it != oPtr->myItem) {
+			oPtr = oPtr->myNext;
+		}
+	}
+	return -1;
+}
+
+/* By Amber Bingle
+ * insert() creates a new Node containing the item specified,
+ *          and places it at the given index in the list, assuming zero-indexing
+ *          indexes less than 0 add to the beginning of the list,
+ *          indexes greater than mySize add to the end of the list
+ *          if the list is empty, the append method is called to simply add the item
+ *
+ * @param: index, an int indicating the position the item should be added at
+ *         it, the Item to be added to the list
+ */
+template <class Item>
+void List<Item>::insert(Item it, int index)
+{
+	if (myFirst == NULL)
+	{
+		append(it);
+	}
+
+	else
+	{
+		if (index < 0)
+		{
+			index = 0;
+		}
+		else if (index > mySize)
+		{
+			index = mySize;
+		}
+
+		// moves a pointer to the address of the Node that comes after the node being inserted
+		Node * currentNext = myFirst;
+		for (unsigned i = 0; i < index; i++)
+		{
+			currentNext = currentNext->myNext;
+		}
+		// creates the new Node with the Item it
+		Node * nodePtr = new Node(it, currentNext);
+		// handles the special case where the new Item is going to be at the 0th index
+		if (index == 0)
+		{
+			myFirst = nodePtr;
+		}
+		// moves a pointer to the address of the Node that comes before the node being added
+		else
+		{
+			Node * currentPrevious = myFirst;
+			for (unsigned i = 0; i < index-1; i++)
+			{
+				currentPrevious = currentPrevious->myNext;
+			}
+			// makes the previous Node in the list point to the new Node
+			currentPrevious->myNext = nodePtr;
+			// handles the special case where the new Node is the last in the list
+			if (index == mySize)
+			{
+				myLast = nodePtr;
+			}
+		}
+		mySize++;
+	}
+}
+
+
+/* By Johan Sung
+ * remove() takes given index and deletes the item at that index
+ * @param: index, a reference to the location of a certain item in the list
+ * @return: returns the Item at index after the method has been used
+ */
+template <class Item>
+Item List<Item>::remove(unsigned index) {
+	Node * rep;
+	Item temp;
+
+	if (mySize == 0) {
+		myFirst = NULL;
+		myLast = NULL;
+		return 0;
+	}
+	else if (mySize == 1){
+		temp = myFirst->myItem;
+		myLast = NULL;
+		myFirst = NULL;
+	}
+	else if (index <= 0) {
+		temp = myFirst->myItem;
+		rep = myFirst->myNext;
+		myFirst = rep;
+	}
+	else if (index >= mySize) {
+		temp = myLast->myItem;
+		delete myLast;
+		rep = myFirst;
+		for (unsigned i = 0; i < mySize; i++) {
+			rep = rep->myNext;
+		}
+		myLast = rep;
+	}
+	else {
+		rep = myFirst;
+		for (unsigned i = 0; i < index; i++){
+			rep = rep->myNext;
+		}
+		temp = rep->myItem;
+	}
+	mySize -= 1;
+	return temp;
+}
+
+
+
+
+// -----------------------merge sort functions-------------------------
+
+
+/* sort() sorts the items a List in ascending order
+ *   uses a merge sort algorithm, dividing the list in half and recursively calling
+ *   the sort function until each list has only one item, then merging two sorted lists
+ *   until all lists are merged
+ *
+ * @param: original, a reference to the List object to be sorted
+ */
+template <class Item>
+void sort(List<Item>& original)
+{
+	if (original.getSize() > 1)
+	{
+		List<Item> firstHalf, secondHalf;
+		divide(original, firstHalf, secondHalf);
+		sort(firstHalf);
+		sort(secondHalf);
+		original = merge(firstHalf, secondHalf);
+	}
+}
+
+/* divide() divides a List in half, copying each item in the first half to a new list
+ *   and each item in the second half to a new list
+ *
+ * @param: wholeList, a reference to the List object to be divided
+ *         partOne, a reference to the List object that will contain
+ *           the items that were in the first half of wholeList
+ *         partTwo, a reference to the List object that will contain
+ *           the items that were in the second half of wholeList
+ * Postcondition: oldList is an empty List object of size 0
+ * 				  partOne is a List containing all items from the first half of wholeList
+ * 				  partTwo is a List containing all items from the second half of wholeList
+ */
+template <class Item>
+void divide(List<Item>& wholeList, List<Item>& partOne, List<Item>& partTwo)
+{
+	unsigned startSize = wholeList.getSize();
+	for (unsigned i = 0; i < startSize/2; i++)
+	{
+		partOne.append(wholeList.getFirst());
+		wholeList.remove(0);
+	}
+	for (unsigned i = startSize/2; i < startSize; i++)
+	{
+		partTwo.append(wholeList.getFirst());
+		wholeList.remove(0);
+	}
+}
+
+/* mergeItem() utility method containing code repeatedly used in merge()
+ *   moves an item from the beginning of one list to the end of another
+ *
+ * @param: newList, a reference to a List object to which the item is to be moved
+ *         oldList, a reference to a List object from which the item is to be removed
+ *
+ * Postcondition: newList is one item larger, the last item being new
+ *                the first item in oldList has been removed
+ */
+template<class Item>
+void mergeItem(List<Item>& newList, List<Item>& oldList) {
+	newList.append(oldList.getFirst());
+	oldList.remove(0);
+}
+
+/* merge() combines to lists sorted in ascending order such that the result is also sorted
+ *
+ * @param:  list1 and list2, references to the List objects which are to be merged
+ * @return: A List object, containing all items from list1 and list2
+ *
+ * Precondition: list1 and list2 are each sorted in ascending order
+ * Postcondition: list1 and list2 are empty Lists and the List that is returned is sorted in ascending order
+ */
+template <class Item>
+List<Item> merge(List<Item>& list1, List<Item>& list2)
+{
+	List<Item> mergedList;
+	while ((list1.getSize() != 0) && (list2.getSize() != 0))
+	{
+		// if the item in list1 is smaller than that in list2,
+		// list1 is used as the parameter in mergeItem
+		// otherwise list2 is used as the parameter
+		mergeItem(mergedList, list1.getFirst() < list2.getFirst() ? list1 : list2);
+	}
+	// adds any additional items left in either list to the merged list
+	// in the event that the lists to be merged were of unequal size
+	while (list1.getSize() != 0)
+	{
+		mergeItem(mergedList, list1);
+	}
+	while (list2.getSize() != 0)
+	{
+		mergeItem(mergedList, list2);
+	}
+	return mergedList;
+}
+
+
+#endif /* LIST_H_ */
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cat ListTester.cpp
+/* ListTester.cpp defines the test methods for class List.
+ * Joel Adams, for CS 112 at Calvin College.
+ * Added onto by Johan Sung (jcs56)
+ */
+
+
+#include "ListTester.h" // ListTester
+#include "List.h"		// List
+
+using namespace std;
+
+void ListTester::runTests() {
+	cout << "Running List tests..." << endl;
+	testDefaultConstructor();
+	testNodeDefaultConstructor();
+	testNodeExplicitConstructor();
+	testAppend();
+	testDestructor();
+	testCopyConstructor();
+	testAssignment();
+	testEquality();
+	testInequality();
+	testReadFromStream();
+	testWriteTo();
+	testReadFromString();
+	//	testWriteToString();
+	testPrepend();
+	testGetIndexOf();
+	testInsert();
+	testRemove();
+	testSort();
+	cout << "All tests passed!" << endl;
+}
+
+void ListTester::testDefaultConstructor() {
+	cout << "Testing List default constructor... " << flush;
+	List<double> aList;
+	assert( aList.mySize == 0 );
+	assert( aList.myFirst == NULL );
+	assert( aList.myLast == NULL );
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testNodeDefaultConstructor() {
+	cout << "Testing Node default constructor... " << flush;
+	List<double>::Node aNode;
+	assert( aNode.myItem == 0 );
+	assert( aNode.myNext == NULL );
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testNodeExplicitConstructor() {
+	cout << "Testing Node explicit constructor... " << flush;
+	List<double>::Node n1(11, NULL);
+	assert( n1.myItem == 11 );
+	assert( n1.myNext == NULL );
+	cout << " 1 " << flush;
+
+	List<double>::Node *n3 = new List<double>::Node(33, NULL);
+	List<double>::Node n2(22, n3);
+	assert( n2.myItem == 22 );
+	assert( n2.myNext == n3 );
+	cout << " 2 " << flush;
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testAppend() {
+	cout << "Testing append()... " << flush;
+	// empty List
+	List<double> aList;
+	assert( aList.getSize() == 0 );
+	assert( aList.myFirst == NULL );
+	assert( aList.myLast == NULL );
+	try {
+		aList.getFirst();
+		cerr << "getFirst() worked on empty list" << endl;
+		exit(1);
+	} catch (underflow_error&) {
+		cout << " 0a " << flush;
+	}
+	try {
+		aList.getLast();
+		cerr << "getLast() worked on empty list" << endl;
+		exit(1);
+	} catch (underflow_error&) {
+		cout << " 0b " << flush;
+	}
+	// append to empty list
+	aList.append(11);
+	assert( aList.getSize() == 1 );
+	assert( aList.myFirst != NULL );
+	assert( aList.myLast == aList.myFirst );
+	assert( aList.getFirst() == 11 );
+	assert( aList.getLast() == 11 );
+	assert( aList.myFirst->myNext == NULL );
+	cout << " 1 " << flush;
+	// append to a list containing 1 Item
+	aList.append(22);
+	assert( aList.getSize() == 2 );
+	assert( aList.myFirst != NULL );
+	assert( aList.myLast != NULL );
+	assert( aList.myFirst != aList.myLast );
+	assert( aList.getFirst() == 11 );
+	assert( aList.getLast() == 22 );
+	assert( aList.myFirst->myNext != NULL );
+	assert( aList.myLast->myNext == NULL );
+	cout << " 2 " << flush;
+	// append to a list containing 2 Items
+	aList.append(33);
+	assert( aList.getSize() == 3 );
+	assert( aList.myFirst != NULL );
+	assert( aList.myLast != NULL );
+	assert( aList.getFirst() == 11 );
+	assert( aList.getLast() == 33 );
+	assert( aList.myFirst->myNext->myItem == 22 );
+	assert( aList.myLast->myNext == NULL );
+	cout << " 3 " << flush;
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testDestructor() {
+	cout << "Testing destructor... " << flush;
+	List<double> aList;
+	aList.~List();
+	assert( aList.getSize() == 0 );
+	assert( aList.myFirst == NULL );
+	assert( aList.myLast == NULL );
+	cout << " 1 " << flush;
+
+	aList.append(11);
+	aList.append(22);
+	aList.append(33);
+	aList.~List();
+	assert( aList.getSize() == 0 );
+	assert( aList.myFirst == NULL );
+	assert( aList.myLast == NULL );
+	cout << " 2 " << flush;
+	cout << "Passed!  But double-check for memory leaks!" << endl;
+}
+
+void ListTester::testCopyConstructor() {
+	cout << "Testing copy constructor... " << flush;
+	// copy empty list
+	List<double> list1;
+	List<double> list2(list1);
+	assert( list2.getSize() == 0 );
+	assert( list2.myFirst == NULL );
+	assert( list2.myLast == NULL );
+	cout << " 1 " << flush;
+
+	// copy nonempty list
+	List<double> list3;
+	list3.append(11);
+	list3.append(22);
+	list3.append(33);
+	List<double> list4(list3);
+	assert( list4.getSize() == 3 );
+	assert( list4.getFirst() == 11 );
+	assert( list4.getLast() == 33 );
+	assert( list4.myFirst->myNext->myItem == 22 );
+	assert( list4.myFirst != list3.myFirst );
+	assert( list4.myLast != list3.myLast );
+	cout << " 2 " << flush;
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testAssignment() {
+	cout << "Testing assignment... " << flush;
+	// empty to empty assignment
+	List<double> list1;
+	List<double> list2;
+	list2 = list1;
+	assert( list2.getSize() == 0 );
+	assert( list2.myFirst == NULL );
+	assert( list2.myLast == NULL );
+	cout << " 1 " << flush;
+
+	// non-empty to empty assignment
+	List<double> list3;
+	list3.append(11);
+	list3.append(22);
+	list3.append(33);
+	List<double> list4;
+	list4 = list3;
+	assert( list4.getSize() == 3 );
+	assert( list4.getFirst() == 11 );
+	assert( list4.getLast() == 33 );
+	assert( list4.myFirst->myNext->myItem == 22 );
+	cout << " 2 " << flush;
+
+	// equal-sized non-empty to non-empty assignment
+	List<double> list5;
+	list5.append(44);
+	list5.append(55);
+	list5.append(66);
+	list5 = list3;
+	assert( list5.getSize() == 3 );
+	assert( list5.getFirst() == 11 );
+	assert( list5.getLast() == 33 );
+	assert( list5.myFirst->myNext->myItem == 22 );
+	cout << " 3 " << flush;
+
+	// empty to non-empty assignment
+	List<double> list6;
+	list6.append(44);
+	list6.append(55);
+	list6.append(66);
+	List<double> list7;
+	list6 = list7;
+	assert( list6.getSize() == 0 );
+	assert( list6.myFirst == NULL );
+	assert( list6.myLast == NULL );
+	cout << " 4 " << flush;
+
+	// unequal-sized non-empty to non-empty assignment
+	List<double> list8;
+	list8.append(44);
+	list8.append(55);
+	list8.append(66);
+	list8.append(77);
+	list8 = list3;
+	assert( list8.getSize() == 3 );
+	assert( list8.getFirst() == 11 );
+	assert( list8.getLast() == 33 );
+	assert( list8.myFirst->myNext->myItem == 22 );
+	cout << " 5 " << flush;
+
+	// assignment chaining
+	List<double> list9;
+	list9.append(44);
+	list9.append(55);
+	list9.append(66);
+	list9.append(77);
+	List<double> list10;
+	list10 = list9 = list8;
+	assert( list10.getSize() == 3 );
+	assert( list10.getFirst() == 11 );
+	assert( list10.getLast() == 33 );
+	assert( list10.myFirst->myNext->myItem == 22 );
+	cout << " 6 " << flush;
+
+	// self-assignment (stupid, but possible)
+	List<double> list11;
+	list11.append(11);
+	list11.append(22);
+	list11.append(33);
+	list11 = list11;
+	assert( list11.getSize() == 3 );
+	assert( list11.getFirst() == 11 );
+	assert( list11.getLast() == 33 );
+	assert( list11.myFirst->myNext->myItem == 22 );
+	cout << " 7 " << flush;
+
+	cout << "Passed!  But double-check for memory leaks!" << endl;
+}
+
+void ListTester::testEquality() {
+	cout << "Testing equality... " << flush;
+	// two empty lists
+	List<double> list1;
+	List<double> list2;
+	assert( list1 == list1 );
+	cout << " 1 " << flush;
+
+	// a non-empty list
+	List<double> list3;
+	list3.append(33);		// [33]
+	assert( !(list3 == list1) );
+	cout << " 2 " << flush;
+
+	// equal, non-empty lists of the same size
+	List<double> list4;
+	list4.append(33);		// [33]
+	assert( list4 == list3 );
+	assert( list3 == list4 );
+	cout << " 3 " << flush;
+
+	// unequal, non-empty lists of the same size
+	list3.append(55);		// [33,55]
+	List<double> list5;
+	list5.append(44);		// [44]
+	list5.append(55);		// [44,55]
+	assert( !(list5 == list3) );
+	assert( !(list3 == list5) );
+	cout << " 4 " << flush;
+
+	// unequal non-empty lists of different sizes
+	list4.append(44);		// [33,44]
+	list4.append(55);		// [33,44,55]
+	assert( !(list4 == list5) );
+	assert( !(list5 == list4) );
+	assert( !(list5 == list3) );
+	cout << " 5 " << flush;
+
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testInequality() {
+	cout << "Testing inequality... " << flush;
+	// two empty lists
+	List<double> list1;
+	List<double> list2;
+	assert( list1 != list1 );
+	cout << " 1 " << flush;
+
+	// a non-empty list
+	List<double> list3;
+	list3.append(33);		// [33]
+	assert( !(list3 == list1) );
+	cout << " 2 " << flush;
+
+	// equal, non-empty lists of the same size
+	List<double> list4;
+	list4.append(33);		// [33]
+	assert( list4 != list3 );
+	assert( list3 != list4 );
+	cout << " 3 " << flush;
+
+	// unequal, non-empty lists of the same size
+	list3.append(55);		// [33,55]
+	List<double> list5;
+	list5.append(44);		// [44]
+	list5.append(55);		// [44,55]
+	assert( list5 != list3 );
+	assert( list3 != list5 );
+	cout << " 4 " << flush;
+
+	// unequal non-empty lists of different sizes
+	list4.append(44);		// [33,44]
+	list4.append(55);		// [33,44,55]
+	assert( list4 != list5 );
+	assert( list5 != list4 );
+	assert( list5 != list3 );
+	cout << " 5 " << flush;
+
+	cout << "Passed!" << endl;
+
+}
+
+void ListTester::testReadFromStream()
+{
+	cout << "Testing reading from a stream..." << flush;
+	ifstream fin("sampleLists.txt");
+	assert( fin.is_open() );
+
+	// reading an empty list into an empty list
+	List<double> list1;
+	list1.readFrom(fin);
+	assert( list1.mySize == 0 );
+	assert( list1.myFirst == NULL );
+	assert( list1.myLast == NULL );
+	cout << " 1 " << flush;
+
+	// reading a list with one item into an empty list
+	List<double> list2;
+	list2.readFrom(fin);
+	assert( list2.mySize == 1 );
+	assert( list2.myFirst == list2.myLast );
+	assert( list2.getFirst() == 1 );
+	cout << " 2 " << flush;
+
+	// reading a list with multiple items into an empty list
+	List<double> list3;
+	list3.readFrom(fin);
+	assert( list3.mySize == 3 );
+	assert( list3.myFirst != list3.myLast );
+	assert( list3.getFirst() == 11 );
+	assert( list3.myFirst->myNext->myItem == 22 );
+	assert( list3.getLast() == 33 );
+	cout << " 3 " << flush;
+
+	// reading an empty list into a list with items already in it
+	// also ensures only one new line is eaten at the end of a readFrom call
+	list2.readFrom(fin);
+	assert( list2.mySize == 0 );
+	assert( list2.myFirst == NULL );
+	assert( list2.myLast == NULL );
+	cout << " 4 " << flush;
+
+	// reading a list with one item into a list with a different number of items
+	list3.readFrom(fin);
+	assert( list3.mySize == 1 );
+	assert( list3.myFirst == list3.myLast );
+	assert( list3.getFirst() == 1 );
+	cout << " 5 " << flush;
+
+	// reading a list with multiple items into a list with a different number of items
+	list3.readFrom(fin);
+	assert( list3.mySize == 3 );
+	assert( list3.myFirst != list3.myLast );
+	assert( list3.getFirst() == 11 );
+	assert( list3.myFirst->myNext->myItem == 22 );
+	assert( list3.getLast() == 33 );
+	cout << " 6 " << flush;
+
+	fin.close();
+	cout << "Passed!" << endl;
+}
+
+
+void ListTester::testWriteTo() {
+	cout << "Testing writeTo(ostream)... " << flush;
+
+	// create list with multiple elements
+	List<double> list;
+	list.append(11);
+	list.append(22);
+	list.append(33);
+	assert( list.getSize() == 3 );
+	assert( list.getFirst() == 11 );
+	assert( list.getLast() == 33 );
+	assert( list.myFirst->myNext->myItem == 22 );
+	cout << " 0 " << flush;
+
+	// prepare a file to stream out to
+	ofstream fout("output_stream.txt");
+	assert (fout.is_open());
+	list.writeTo(fout);
+	fout.close();
+	cout << " 1a " << flush;
+
+	// prepare to check efficacy of method
+	ifstream fin("output_stream.txt");
+	assert( fin.is_open() );
+	cout<< " 1b " << flush;
+
+	// check to see if method worked
+	List<double> list1;
+	list1.readFrom(fin);
+	assert( list1.getSize() == 3 );
+	assert( list1.getFirst() == 11 );
+	assert( list1.getLast() == 33 );
+	assert( list1.myFirst->myNext->myItem == 22 );
+	fin.close();
+	cout << " 2 " << flush;
+
+	cout <<" Passed! " << endl;
+
+}
+
+void ListTester::testReadFromString() {
+	// create list using values in given file using filename as parameter
+	cout << "Testing readFrom(string)... " << flush;
+	List<double> list;
+	list.readFrom("readFromStringEx.txt");
+
+	// make assertions to test method
+	assert(list.getSize() == 3);
+	assert(list.getFirst() == 11);
+	assert(list.getLast() == 33);
+	assert(list.myFirst->myNext->myItem == 22);
+
+	cout << " Passed! " << endl;
+
+}
+
+void ListTester::testWriteToString()
+{
+	cout << "Testing writing to a file..." << flush;
+
+	// writing an empty list
+	List<double> list1;
+	list1.writeTo("emptyList.txt");
+	List<double> list2;
+	// (to ensure lists are not equivalent just because they were both created empty)
+	ifstream fin("emptyList.txt");
+	list2.append(11);
+	list2.append(22);
+	list2.append(33);
+	list2.readFrom(fin);
+	assert( list1 == list2 );
+	cout << " 1 " << flush;
+
+	// writing a list with items
+	List<double> list3;
+	list3.append(11);
+	list3.append(22);
+	list3.append(33);
+	list3.writeTo("listWithItems.txt");
+	List<double> list4;
+	list4.readFrom("listWithItems.txt");
+	assert ( list3 == list4 );
+	cout << " 2 " << flush;
+
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testPrepend()
+{
+	cout << "Testing prepend()...";
+	List<double> list1;
+
+	// test prepend to empty list
+	list1.prepend(22);
+	assert( list1.mySize == 1 );
+	assert( list1.getFirst() == 22 );
+	assert( list1.getLast() == 22 );
+	assert( list1.myFirst == list1.myLast );
+	cout << " 1 " << flush;
+
+	// test prepend to non-empty list
+	list1.prepend(11);
+	assert( list1.mySize == 2 );
+	assert( list1.getFirst() == 11 );
+	assert( list1.getLast() == 22 );
+	cout << " 2 " << flush;
+	cout << "Passed!" << endl;
+}
+
+
+void ListTester::testGetIndexOf() {
+	cout << "Testing getIndexOf()..." << flush;
+	// test method on empty list
+	List<double> list;
+	assert(list.getIndexOf(35) == -1);
+	cout << " 1 " << flush;
+
+	// create a list with multiple elements (list1)
+	List<double> list1;
+	list1.append(11);
+	list1.append(22);
+	list1.append(33);
+	assert( list1.getSize() == 3 );
+	assert( list1.getFirst() == 11 );
+	assert( list1.getLast() == 33 );
+	assert( list1.myFirst->myNext->myItem == 22 );
+	cout << " 2a " << flush;
+
+	// test method on list1
+	assert(list1.getIndexOf(11) == 0);
+	assert(list1.getIndexOf(22) == 1);
+	assert(list1.getIndexOf(33) == 2);
+	cout << " 2b " << flush;
+
+	cout << "Passed!" << endl;
+}
+
+void ListTester::testInsert()
+{
+	cout << "Testing insert()..." << flush;
+
+	// test inserting at the 0th index to an empty list
+	List<double> list1;
+	list1.insert(11, 0);
+	assert( list1.mySize == 1 );
+	assert( list1.getFirst() == 11 );
+	assert( list1.getLast() == 11 );
+	assert( list1.myFirst == list1.myLast );
+	assert( list1.myLast->myNext == NULL );
+	cout << " 1 " << flush;
+
+	// test inserting at less than 0th index to an empty list
+	List<double> list2;
+	list2.insert(11, -3);
+	assert( list2.mySize == 1 );
+	assert( list2.getFirst() == 11 );
+	assert( list2.getLast() == 11 );
+	assert( list2.myFirst == list2.myLast );
+	assert( list2.myLast->myNext == NULL );
+	cout << " 2 " << flush;
+
+	// test inserting at greater than 0th index to an empty list
+	List<double> list3;
+	list3.insert(11, 4);
+	assert( list3.mySize == 1 );
+	assert( list3.getFirst() == 11 );
+	assert( list3.getLast() == 11 );
+	assert( list3.myFirst == list3.myLast );
+	assert( list3.myLast->myNext == NULL );
+	cout << " 3 " << flush;
+
+	// test inserting at the 0th index to a non-empty list
+	list1.insert(00, 0);
+	assert( list1.mySize == 2 );
+	assert( list1.getFirst() == 00 );
+	assert( list1.getLast() == 11 );
+	cout << " 4 " << flush;
+
+	// test inserting at greater than 0th index to a non-empty list
+	list2.insert(33, 1);
+	assert( list2.mySize == 2 );
+	assert( list2.getFirst() == 11 );
+	assert( list2.getLast() == 33 );
+	cout << " 5 " << flush;
+
+	// test inserting at less than 0th index to a non-empty list
+	list3.insert(00, -4);
+	assert( list3.mySize == 2 );
+	assert( list3.getFirst() == 00 );
+	assert( list3.getLast() == 11 );
+	cout << " 6 " << flush;
+
+	// test inserting to the middle of a non-empty list
+	list2.insert(22, 1);
+	assert( list2.mySize == 3);
+	assert( list2.getFirst() == 11 );
+	assert( list2.myFirst->myNext->myItem == 22 );
+	assert( list2.myFirst->myNext->myNext == list2.myLast );
+	assert( list2.getLast() == 33 );
+	cout << " 7 " << flush;
+
+	// test inserting to the end of a non-empty list
+	list3.insert(22, 2);
+	assert( list3.mySize == 3 );
+	assert( list3.getFirst() == 00 );
+	assert( list3.getLast() == 22 );
+	assert( list3.myFirst->myNext->myItem == 11 );
+	assert( list3.myFirst->myNext->myNext == list3.myLast );
+	assert( list1.myLast->myNext == NULL );
+	cout<< " 8 " << flush;
+	cout << "Passed!" << endl;
+
+}
+
+void ListTester::testRemove() {
+	cout << "Testing remove()..." << flush;
+
+	// test with empty list
+	List<double> list;
+	assert( list.remove(0) == 0);
+	cout << " 1 " << flush;
+
+	// test list with only one item
+	List<double> list1;
+	list1.append(50);
+	assert( list1.remove(0) == 50);
+	assert( list1.getSize() == 0);
+	assert( list1.myFirst == NULL);
+	assert( list1.myLast == NULL);
+	cout << " 2 " << flush;
+
+	// test removal of first element of list with multiple items
+	List<double> list2;
+	list2.append(11);
+	list2.append(22);
+	list2.append(33);
+	list2.append(44);
+	list2.append(55);
+	assert(list2.remove(0) == 11);
+	assert( list2.getSize() == 4 );
+	cout << " 3 " << flush;
+
+	//test removal of mid element from list with multiple items
+	List<double> list3;
+	list3.append(11);
+	list3.append(22);
+	list3.append(33);
+	list3.append(44);
+	list3.append(55);
+	assert(list3.remove(2) == 33);
+	assert( list3.getSize() == 4 );
+	cout << " 4 " << flush;
+
+	// test removal of last element of list with multiple items
+	List<double> list4;
+	list4.append(11);
+	list4.append(22);
+	list4.append(33);
+	list4.append(44);
+	list4.append(55);
+	assert(list4.remove(4) == 55);
+	assert( list4.getSize() == 4 );
+	cout << " 5 " << flush;
+
+	cout << "Passed!" << endl;
+
+}
+
+void ListTester::testSort()
+{
+	cout << "Testing sort(list)..." << flush;
+	//test on empty list
+	List<double> list1;
+	sort(list1);
+	assert ( list1.myFirst == NULL );
+	assert ( list1.myLast == NULL );
+	assert ( list1.getSize() == 0 );
+	cout << " 1 " << flush;
+
+	//test on list containing one item
+	list1.append(11);
+	sort(list1);
+	assert ( list1.myFirst == list1.myLast );
+	assert ( list1.myFirst != NULL );
+	assert ( list1.getFirst() == 11 );
+	assert ( list1.getSize() == 1 );
+	cout << " 2 " << flush;
+
+	//test on list containing multiple items
+	list1.prepend(22);
+	list1.prepend(44);
+	list1.prepend(55);
+	list1.prepend(33);
+	sort(list1);
+	assert ( list1.getFirst() == 11 );
+	assert ( list1.getLast() == 55 );
+	assert ( list1.myFirst->myNext->myItem == 22 );
+	assert ( list1.myFirst->myNext->myNext->myItem == 33 );
+	assert ( list1.myFirst->myNext->myNext->myNext->myItem == 44 );
+	assert ( list1.getSize() == 5 );
+	cout << " 3 " << flush;
+
+	//test on list that is already in order
+	sort(list1);
+	assert ( list1.getFirst() == 11 );
+	assert ( list1.getLast() == 55 );
+	assert ( list1.myFirst->myNext->myItem == 22 );
+	assert ( list1.myFirst->myNext->myNext->myItem == 33 );
+	assert ( list1.myFirst->myNext->myNext->myNext->myItem == 44 );
+	assert ( list1.getSize() == 5 );
+	cout << " 4 " << flush;
+
+	//test on list in reverse order
+	List<double> list2;
+	list2.prepend(11);
+	list2.prepend(22);
+	list2.prepend(33);
+	list2.prepend(44);
+	sort(list2);
+	assert ( list2.getFirst() == 11 );
+	assert ( list2.getLast() == 44 );
+	assert ( list2.myFirst->myNext->myItem == 22 );
+	assert ( list2.myFirst->myNext->myNext->myItem == 33 );
+	assert ( list2.getSize() == 4 );
+	cout << " 5 " << flush;
+
+	//test on list containing two items
+	List<double> list3;
+	list3.prepend(11);
+	list3.prepend(22);
+	sort(list3);
+	assert ( list3.getFirst() == 11 );
+	assert ( list3.getLast() == 22 );
+	cout << " 6 " << flush;
+
+	//test on list containing two of the same item
+	list3.prepend(22);
+	sort(list3);
+	assert ( list3.getFirst() == 11 );
+	assert ( list3.myFirst->myNext->myItem == 22 );
+	assert ( list3.getLast() == 22 );
+	assert ( list3.myFirst->myNext != list3.myLast );
+	cout << " 7 " << flush;
+
+	cout << "Passed!" << endl;
+}
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cat ListTester.h
+/* ListTester.h declares the test-class for class List.
+ * Joel Adams, for CS 112 at Calvin College.
+ */
+
+#ifndef LISTTESTER_H_
+#define LISTTESTER_H_
+
+#include "List.h"            // List
+#include <iostream>          // cin, cout
+#include <cassert>           // assert()
+#include <cstdlib>           // exit()
+#include <stdexcept>         // underflow_error
+#include <fstream>		     // ifstream, ofstream
+
+class ListTester {
+public:
+	void runTests();
+	void testDefaultConstructor();
+	void testNodeDefaultConstructor();
+	void testNodeExplicitConstructor();
+	void testAppend();
+	void testDestructor();
+	void testCopyConstructor();
+	void testAssignment();
+	void testEquality();
+	void testInequality();
+	void testReadFromStream();
+	void testWriteTo();
+	void testReadFromString();
+	void testWriteToString();
+	void testPrepend();
+	void testGetIndexOf();
+	void testInsert();
+	void testRemove();
+	void testSort();
+};
+
+#endif /*LISTTESTER_H_*/
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cat Vec.h
+/* Vec.h provides a simple vector class named Vec.
+ * Student Names: Ethan Clark (Student One) and Thomas Dykstra (Student Two)
+ * Date: March 2, 2015
+ * Begun by: Joel C. Adams, for CS 112 at Calvin College.
+ */
+
+#ifndef VEC_H_
+#define VEC_H_
+
+//Includes for the Vec Class
+#include <iostream>
+#include <stdexcept>
+#include <cassert>
+#include <fstream>
+using namespace std;
+
+//Declaration of the Vec Class and its methods, both private and public
+template<class Item>
+class Vec {
+public:
+	Vec();
+	Vec(unsigned size);
+	Vec(const Vec& original);
+	virtual ~Vec();
+	Vec& operator=(const Vec& original);
+	unsigned getSize() const;
+	void setItem(unsigned index, const Item& it);
+	Item getItem(unsigned index) const;
+	void setSize(unsigned newSize);
+	bool operator==(const Vec& v2) const;
+	void writeTo(ostream& out) const;
+	void readFrom(istream& in);
+	bool operator!=(const Vec& v2);
+	Vec operator-(const Vec& v1);
+	void readFrom(const string& filename);
+	const Item& operator[](unsigned index) const;
+	Item& operator[](unsigned index);
+	void writeTo(string fileName);
+	Vec operator+(const Vec& v2);
+	double operator*(const Vec& v2);
+private:
+	unsigned mySize;
+	Item * myArray;
+	friend class VecTester;
+	friend class MatrixTester;
+
+};
+
+//Default Constructor for the Vec class
+template<class Item>
+Vec<Item>::Vec() {
+	mySize = 0;
+	myArray = NULL;
+}
+
+//Explicit Constructor for the Vec class
+template<class Item>
+Vec<Item>::Vec(unsigned size) {
+	mySize = size;
+	myArray = new Item[size]();
+}
+
+//Copy constructor for the Vec class
+template<class Item>
+Vec<Item>::Vec(const Vec<Item>& original) {
+	mySize = original.mySize;
+	if ( original.mySize > 0 ) {
+		myArray = new Item[mySize];
+		for (unsigned i = 0; i < mySize; i++) {
+			myArray[i] = original.myArray[i];
+		}
+	}
+	else {
+		myArray = NULL;
+	}
+}
+
+//Destructor to deallocate the memory for myArray for the Vec class
+template<class Item>
+Vec<Item>::~Vec() {
+	delete [] myArray;
+	myArray = NULL;
+	mySize = 0;
+}
+
+//Assignment Operator for the Vec class
+template<class Item>
+Vec<Item>& Vec<Item>::operator=(const Vec<Item>& original) {
+	if (this != &original) {
+		if (mySize != original.mySize) {
+			if (mySize > 0) {
+				delete [] myArray;
+				myArray = NULL;
+			}
+			if (original.mySize > 0) {
+				myArray = new Item[original.mySize];
+			}
+			mySize = original.mySize;
+		}
+		for (unsigned i = 0; i < mySize; i++) {
+			myArray[i] = original.myArray[i];
+		}
+	}
+	return *this;
+}
+
+//Vec class method that returns the size of the Vec
+template<class Item>
+unsigned Vec<Item>::getSize() const {
+	return mySize;
+}
+
+//Vec class method that sets a certain index to a value
+template<class Item>
+void Vec<Item>::setItem(unsigned index, const Item& it) {
+	if ( index >= mySize ) {
+		throw range_error("Invalid index");
+	}
+	else {
+		myArray[index] = it;
+	}
+}
+
+//Vec class method that returns the value at a certain index
+template<class Item>
+Item Vec<Item>::getItem(unsigned index) const {
+	if ( index >= mySize ) {
+		throw range_error("Invalid index");
+	}
+	else {
+		return myArray[index];
+	}
+}
+
+//Vec class method that sets the size of the Vec
+template<class Item>
+void Vec<Item>::setSize(unsigned newSize) {
+	if (mySize != newSize) {
+		if (newSize == 0) {
+			delete [] myArray;
+			myArray = NULL;
+			mySize = 0;
+		}
+		else {
+			Item *newArray = new Item[newSize];
+			if (mySize < newSize) {
+				for (unsigned i = 0; i < mySize; i++) {
+					newArray[i] = myArray[i];
+				}
+				for (unsigned i = mySize; i < newSize; i++) {
+					newArray[i] = 0;
+				}
+			}
+			else {
+				for (unsigned i = 0; i < newSize; i++) {
+					newArray[i] = myArray[i];
+				}
+			}
+			mySize = newSize;
+			delete [] myArray;
+			myArray = newArray;
+		}
+	}
+}
+
+//Vec class method that compares two Vecs and returns true if they are the same
+//and returns false if they are not the same
+template<class Item>
+bool Vec<Item>::operator==(const Vec<Item>& v2) const {
+	if (mySize != v2.getSize()) {
+		return false;
+	}
+	for (unsigned i = 0; i < mySize; i++) {
+		if (myArray[i] != v2.myArray[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+//Vec class method to write the Vecs elements to a file
+template<class Item>
+void Vec<Item>::writeTo(ostream& out) const {
+	for (unsigned i = 0; i < mySize; i++) {
+		out << myArray[i] << " ";
+	}
+}
+
+//Vec class method that reads in elements from a file and puts them in a Vec
+template<class Item>
+void Vec<Item>::readFrom(istream& in) {
+	for (unsigned i = 0; i < mySize; i++) {
+		in >> myArray[i];
+	}
+}
+
+/*
+ * Ethan Clark (student one) wrote the next three methods
+ * Vec class method that compares two vecs, returning true if they are not equal
+ * and returning false if they are equal
+ */
+template<class Item>
+bool Vec<Item>::operator!=(const Vec<Item>& v2) {
+	if (mySize != v2.getSize()) {
+		return true;
+	}
+	if (mySize == v2.getSize()) {
+		for (unsigned i = 0; i < mySize; i++) {
+			if (myArray[i] != v2.myArray[i]) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+//Vec class method that takes two vecs and subtracts one from the other
+template<class Item>
+Vec<Item> Vec<Item>::operator-(const Vec<Item>& v1) {
+	if ( mySize == v1.getSize() ) {
+		Vec v3(mySize);
+		for ( unsigned i =0; i < mySize; i++ ) {
+			v3.myArray[i] = ( myArray[i] - v1.myArray[i] );
+		}
+		return v3;
+	}
+	else {
+		throw invalid_argument("Different sized vecs");
+	}
+}
+
+//Vec class method that reads in values from a file and puts them in a Vec
+template<class Item>
+void Vec<Item>::readFrom(const string& filename) {
+	ifstream fin( filename.c_str() );
+	assert ( fin.is_open() );
+
+	fin >> mySize;
+
+	delete [] myArray;
+
+	myArray = new Item[mySize];
+
+	for ( unsigned i = 0; i < mySize; i++ ) {
+		fin >> myArray[i];
+	}
+
+	fin.close();
+}
+//end Student One methods
+
+/*
+ * Thomas Dykstra (Student Two) wrote the next three methods
+ * Vec class method that writes a Vec's elements to a file
+ */
+template<class Item>
+void Vec<Item>::writeTo(string fileName){
+	ofstream out ( fileName.c_str() );
+	assert (out.is_open());
+	out << mySize << endl;
+	for (unsigned i = 0; i<mySize; i++){
+		out << myArray[i] << endl;
+	}
+}
+
+//Vec class method that adds two vecs together
+template<class Item>
+Vec<Item> Vec<Item>::operator+(const Vec<Item>& v2) {
+	//operator= takes care of possible memory leak of v3
+	if ( mySize == v2.getSize() ) {
+		Vec v3(mySize);
+		for (unsigned i = 0; i < mySize; i++){
+			v3.myArray[i] = (myArray[i] + v2.myArray[i]);
+		}
+	return v3;
+	}
+	else {
+		throw invalid_argument("One Size is Too Big");
+}
+}
+
+//Vec class method that returns the dot product of two vecs
+template<class Item>
+double Vec<Item>::operator*(const Vec<Item>& v2) {
+	double dProd = 0;
+	if ( mySize == v2.getSize() ){
+		for (unsigned i=0; i<mySize; i++){
+			dProd += (myArray[i] * v2.myArray[i]);
+		}
+		return dProd;
+	}
+	else {
+		throw invalid_argument("Different sized Vecs");
+	}
+}
+//end Student Two methods.
+
+//Student One Method (Ethan Clark)
+//Vec class method that returns the value at a given index using the subscript operator
+template<class Item>
+const Item& Vec<Item>::operator[](unsigned index) const {
+
+	if ( index >= mySize ) {
+		throw range_error("Invalid index");
+	}
+
+	return myArray[index];
+}
+
+//Student Two Method (Thomas Dykstra)
+//Vec class method that assigns the value to the given index using the subscript operator
+template<class Item>
+Item& Vec<Item>::operator[](unsigned index) {
+
+	if ( index >= mySize ) {
+		throw range_error("Invalid index");
+	}
+	return myArray[index];
+}
+
+/*
+ * merge() method written to merge two Vecs together and put them in ascending order
+ * written by Ethan Clark (elc3)
+ * written for project 6 for CS 112
+ * March 29, 2015
+ */
+template<class Item>
+void mergeVec(const Vec<Item>& Vec1, const Vec<Item>& Vec2, Vec<Item>& Vec3) {
+
+	//Create three counter variables for the three Vecs
+	unsigned i = 0;
+	unsigned j = 0;
+	unsigned k = 0;
+
+	//While loop to run while i and j are less than the sizes of the Vecs, respectively
+	while (i < Vec1.getSize() and j < Vec2.getSize()) {
+
+		//If the current element in Vec1 is less than the current element in Vec2...
+		if (Vec1[i] < Vec2[j]) {
+			Vec3[k] = Vec1[i];
+			i++;
+		}
+
+		//Else if the current element in Vec2 is less than the current element in Vec1...
+		else {
+			Vec3[k] = Vec2[j];
+			j++;
+		}
+
+		//Increase the Vec3 counter variable
+		k++;
+
+		//If i is greater than Vec1's size and j is not greater than Vec2's size...
+		if (i >= Vec1.getSize() and j < Vec2.getSize()) {
+			while (j < Vec2.getSize()) {
+				Vec3[k] = Vec2[j];
+				j++;
+				k++;
+			}
+		}
+
+		//If j is greater than Vec2's size and i is not greater than Vec1's size...
+		if (j >= Vec2.getSize() and i < Vec1.getSize()) {
+			while (i < Vec1.getSize()) {
+				Vec3[k] = Vec1[i];
+				i++;
+				k++;
+			}
+		}
+	}
+}
+
+/*
+ * sortVec() method to sort the elements of a Vec in ascending order
+ * written by Ethan Clark (elc3)
+ * written for project 6 for CS 112
+ * March 25, 2015
+ */
+template <class Item>
+void sortVec(Vec<Item>& original) {
+
+	//Create two new Vecs
+	Vec<double> LeftVec;
+	Vec<double> RightVec;
+
+	//Make sure the size of the Vec is greater than one
+	if (original.getSize() > 1) {
+
+		//Get the mid value of the size of the Vec
+		int mid = original.getSize() / 2;
+
+		//If the size is an odd number...
+		if (original.getSize() % 2 != 0) {
+
+			LeftVec.setSize(mid);
+			RightVec.setSize(mid + 1);
+
+			for (int i = 0; i < mid; i++) {
+				LeftVec[i] = original[i];
+			}
+
+			int j = 0;
+			for (unsigned i = mid; i < original.getSize(); i++) {
+				RightVec[j] = original[i];
+				j++;
+			}
+		}
+
+		//else if the size is an even number...
+		else {
+
+			LeftVec.setSize(mid);
+			RightVec.setSize(mid);
+
+			for (int i = 0; i < mid; i++) {
+				LeftVec[i] = original[i];
+			}
+
+			int j = 0;
+			for (unsigned i = mid; i < original.getSize(); i++) {
+				RightVec[j] = original[i];
+				j++;
+			}
+		}
+
+		//Recursive call to now sort the two new Vecs
+		sortVec(LeftVec);
+		sortVec(RightVec);
+
+		//Create a new Vec with the size of RightVec + LeftVec
+		Vec<double> Vec3(LeftVec.getSize() + RightVec.getSize());
+
+		//Create a new Vec by merging two Vecs
+		mergeVec(LeftVec, RightVec, Vec3);
+
+		original = Vec3;
+	}
+}
+
+#endif /*VEC_H_*/
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cat Vect[KTester.cpp
+/* VecTester.cpp defines the unit test-methods for Vec, a simple vector class.
+ * Student Names: Ethan Clark (Student One) and Thomas Dykstra (Student Two)
+ * Date: March 2, 2015
+ * Begun by: Joel C. Adams, for CS 112 at Calvin College.
+ */
+
+//Includes needed for the VecTester Class
+#include "VecTester.h"
+#include <iostream>     // cout, cerr, ...
+#include <fstream>      // ifstream, ofstream, ...
+#include <cassert>      // assert()
+#include <cstdlib>      // exit()
+#include <stdexcept>    // range_error, ...
+using namespace std;
+
+//Main function that runs all the tests for the Vec Class
+void VecTester::runTests() const {
+	cout << "Testing class Vec" << endl;
+	testDefaultConstructor();
+	testExplicitConstructor();
+	testCopyConstructor();
+	testDestructor();
+	testAssignment();
+	testGetSize();
+	testSetItem();
+	testGetItem();
+	//testSetSize();
+	testEquality();
+	testWriteToStream();
+	testReadFromStream();
+	testInequality();
+	testAddition();
+	testSubtraction();
+	testDotProduct();
+	testReadFromFile();
+	testWriteToFile();
+	SubscriptTester();
+	TestSortVec();
+	cout << "All tests passed!" << endl;
+}
+
+//Test the Default Constructor for the Vec Class
+void VecTester::testDefaultConstructor() const {
+	cout << "Testing default constructor... " << flush;
+	Vec<double> v;
+	assert( v.mySize == 0 );
+	assert( v.myArray == NULL );
+	cout << "Passed!" << endl;
+}
+
+//Test the Explicit Constructor for the Vec Class
+void VecTester::testExplicitConstructor() const {
+	cout << "Testing explicit constructor... " << flush;
+	cout << " 1 " << flush;
+	Vec<double> v1(3);
+	assert( v1.mySize == 3 );
+	assert( v1.myArray != NULL );
+	for (int i = 0; i < 3; i++) {
+		assert( v1.myArray[i] == 0 );
+	}
+	cout << " 2 " << flush;
+	Vec<double> v2(8);
+	assert( v2.mySize == 8 );
+	assert( v2.myArray != NULL );
+	for (int i = 0; i < 8; i++) {
+		assert( v2.myArray[i] == 0 );
+	}
+	cout << "Passed!" << endl;
+}
+
+//Test the Copy Constructor for the Vec Class
+void VecTester::testCopyConstructor() const {
+	cout << "Testing copy constructor..." << flush;
+	cout << " 1 " << flush;
+	Vec<double> v1;
+	Vec<double> v2(v1);
+	assert( v2.mySize == 0 );
+	assert( v2.myArray == NULL);
+
+	cout << " 2 " << flush;
+	Vec<double> v3(5);
+	Vec<double> v4(v3);
+	assert(v4.mySize == 5);
+	assert(v4.myArray != NULL);
+	assert(v4.myArray != v3.myArray);
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v4.myArray[i] == 0 );
+	}
+
+	cout << " 3 " << flush;
+	Vec<double> v5(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v5.myArray[i] = (i+1);
+	}
+	Vec<double> v6(v5);
+	assert( v6.mySize == 5 );
+	assert( v6.myArray != NULL );
+	assert( v6.myArray != v5.myArray );
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v6.myArray[i] == v5.myArray[i] );
+	}
+	cout << "Passed!" << endl;
+}
+
+//Test the destructor for the Vec Class
+void VecTester::testDestructor() const {
+	cout << "Testing destructor... " << flush;
+	Vec<double> v(5);
+	v.~Vec();
+	assert( v.mySize == 0 );
+	assert( v.myArray == NULL );
+	cout << "Passed, but make sure ~Vec() is returning the array's memory to the system!" << endl;
+}
+
+//Test the assignment operator for the Vec Class
+void VecTester::testAssignment() const {
+	cout << "Testing =..." << flush;
+	// empty-to-empty
+	Vec<double> v, v0;
+	v = v0;
+	assert(v.mySize == 0);
+	assert(v.myArray == NULL);
+	cout << " 0 " << flush;
+	// empty-to-nonempty
+	Vec<double> v1;
+	Vec<double> v2(5);
+	v2 = v1;
+	assert(v2.mySize == 0);
+	assert(v2.myArray == NULL);
+	cout << " 1 " << flush;
+	// nonempty-to-empty
+	Vec<double> v3(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v3.myArray[i] = (i+1);
+	}
+	Vec<double> v4;
+	v4 = v3;
+	assert( v4.mySize == 5 );
+	assert( v4.myArray != v3.myArray );
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v4.myArray[i] == (i+1) );
+	}
+	cout << " 2 " << flush;
+	// nonempty-to-nonempty (larger into smaller)
+	Vec<double> v5(2);
+	for (unsigned i = 0; i < 2; i++) {
+		v5.myArray[i] = (i+1)*10;
+	}
+	v5 = v3;
+	assert(v5.mySize == 5);
+	assert(v5.myArray != v3.myArray);
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v5.myArray[i] == (i+1) );
+	}
+	cout << " 3 " << flush;
+	// nonempty-to-nonempty (smaller into larger)
+	Vec<double> v6(7);
+	for (unsigned i = 0; i < 7; i++) {
+		v6.myArray[i] = (i+1)*10;
+	}
+	v6 = v3;
+	assert(v6.mySize == 5);
+	assert(v6.myArray != v3.myArray);
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v6.myArray[i] == (i+1) );
+	}
+	cout << " 4 " << flush;
+	// nonempty-to-nonempty (equal sized)
+	Vec<double> v7(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v7.myArray[i] = (i+1)*10;
+	}
+	v7 = v3;
+	assert(v7.mySize == 5);
+	assert(v7.myArray != v3.myArray);
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v7.myArray[i] == (i+1) );
+	}
+	cout << " 5 " << flush;
+	// assignment chaining
+	Vec<double> v8;
+	Vec<double> v9(4);
+	v9 = v8 = v3;
+	assert( v9.mySize == 5 );
+	assert( v9.mySize == 5 );
+	assert( v8.myArray != v3.myArray );
+	assert( v8.myArray != v3.myArray );
+	assert( v9.myArray != v8.myArray );
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v8.myArray[i] == (i+1) );
+		assert( v9.myArray[i] == (i+1) );
+	}
+	cout << " 6 " << flush;
+	// self-assignment (idiotic but legal)
+	v3 = v3;
+	assert( v3.mySize == 5 );
+	assert( v3.myArray != NULL );
+	for (unsigned i = 0; i < 5; i++) {
+		assert(v3.myArray[i] == (i+1) );
+	}
+	cout << " 7 " << flush;
+	cout << "Passed!" << endl;
+}
+
+//Test the GetSize method for the Vec Class
+void VecTester::testGetSize() const {
+	cout << "Testing getSize()..." << flush;
+	Vec<double> v1;
+	assert( v1.getSize() == 0 );
+	cout << " 1 " << flush;
+	Vec<double> v2(5);
+	assert( v2.getSize() == 5 );
+	cout << " 2 " << flush;
+	cout << "Passed!" << endl;
+}
+
+//Test the SetItem method for the Vec Class
+void VecTester::testSetItem() const {
+	cout << "Testing setItem()... " << flush;
+	// empty case
+	Vec<double> v0;
+	try {
+		v0.setItem(0, 11);
+		cerr << "setItem() succeeded on empty Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 0 " << flush;
+	}
+	// nonempty case, valid subscript
+	Vec<double> v(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v.setItem(i, i+1);
+	}
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v.myArray[i] == (i+1) );
+	}
+	cout << " 1 " << flush;
+	// nonempty case, invalid subscript
+	Vec<double> v2(3);
+	try {
+		v2.setItem(3, 33);
+		cerr << "setItem() succeeded beyond end of Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 2 " << flush;
+	}
+	cout << "Passed!" << endl;
+}
+
+//Test the GetItem method for the Vec Class
+void VecTester::testGetItem() const {
+	cout << "Testing getItem()... " << flush;
+	// empty Vec
+	Vec<double> v0;
+	try {
+		v0.getItem(0);
+		cerr << "getItem() succeeded on empty Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 0 " << flush;
+	}
+	// non-empty, valid access
+	Vec<double> v(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v.setItem(i, i+1);
+	}
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v.getItem(i) == (i+1) );
+	}
+	cout << " 1 " << flush;
+	// nonempty Vec, invalid index
+	Vec<double> v2(3);
+	try {
+		v2.getItem(3);
+		cerr << "getItem() succeeded beyond end of Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 2 " << flush;
+	}
+	cout << "Passed!" << endl;
+}
+
+////Test the SetSize method for the Vec Class
+//void VecTester::testSetSize() const {
+//	cout << "Testing setSize()..." << flush;
+//	// empty
+//	Vec<double> v0;
+//	v0.setSize(3);
+//	assert( v0.getSize() == 3 );
+//	for (unsigned i = 0; i < 3; i++) {
+//		assert( v0.getItem(i) == 0 );
+//	}
+//	cout << " 0 " << flush;
+//
+//	// non-empty, increasing
+//	Vec<double> v1(5);
+//	for (unsigned i = 0; i < 5; i++) {
+//		v1.setItem(i, i+1);
+//	}
+//	Item * saveAddress = v1.myArray;
+//	v1.setSize(8);
+//	assert( v1.getSize() == 8 );
+//	for (unsigned i = 0; i < 5; i++) {
+//		assert( v1.getItem(i) == (i+1) );
+//	}
+//	for (unsigned i = 5; i < 8; i++) {
+//		assert( v1.getItem(i) == 0 );
+//	}
+//	assert( v1.myArray != saveAddress );
+//	cout << " 1 " << flush;
+//
+//	// non-empty, decreasing
+//	Vec<double> v2(5);
+//	for (unsigned i = 0; i < 5; i++) {
+//		v2.setItem(i, i+1);
+//	}
+//	saveAddress = v2.myArray;
+//	v2.setSize(3);
+//	assert( v2.getSize() == 3 );
+//	for (unsigned i = 0; i < 3; i++) {
+//		assert( v2.getItem(i) == (i+1) );
+//	}
+//	assert( v2.myArray != saveAddress );
+//	cout << " 2 " << flush;
+//
+//	// non-empty, same-size
+//	Vec<double> v3(5);
+//	for (unsigned i = 0; i < 5; i++) {
+//		v3.setItem(i, i+1);
+//	}
+//	saveAddress = v3.myArray;
+//	v3.setSize(5);
+//	assert( v3.getSize() == 5 );
+//	for (unsigned i = 0; i < 5; i++) {
+//		assert( v3.getItem(i) == (i+1) );
+//	}
+//	assert( v3.myArray == saveAddress );
+//	cout << " 3 " << flush;
+//	// set size to zero
+//	v3.setSize(0);
+//	assert( v3.getSize() == 0 );
+//	assert( v3.myArray == NULL );
+//	cout << " 4 " << flush;
+//	cout << "Passed!" << endl;
+//}
+
+//Test the equality method for the Vec Class
+void VecTester::testEquality() const {
+	cout << "Testing ==..." << flush;
+	// empty case
+	Vec<double> v1;
+	Vec<double> v2;
+	assert( v1 == v2 );
+	cout << " 1 " << flush;
+
+	// nonempty, same size, default values
+	Vec<double> v3(5);
+	Vec<double> v4(5);
+	assert( v3 == v4 );
+	cout << " 2 " << flush;
+
+	// nonempty, same size, set values
+	Vec<double> v5(5);
+	Vec<double> v6(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v5.setItem(i, i+1);
+		v6.setItem(i, i+1);
+	}
+	assert( v5 == v6 );
+	cout << " 3 " << flush;
+
+	// empty vs nonempty
+	Vec<double> v7;
+	Vec<double> v8(5);
+	assert( !(v7 == v8) );
+	cout << " 4 " << flush;
+
+	// nonempty, same size, first value different
+	Vec<double> v9(5);
+	Vec<double> v10(5);
+	Vec<double> v11(5);
+	Vec<double> v12(5);
+	v10.setItem(0, 1);
+	assert( !(v9 == v10) );
+	cout << " 5 " << flush;
+
+	// nonempty, same size, middle value different
+	v11.setItem(2, 1);
+	assert( !(v9 == v11) );
+	cout << " 6 " << flush;
+
+	// nonempty, same size, last value different
+	v12.setItem(4, 1);
+	assert( !(v9 == v12) );
+	cout << " 7 " << flush;
+
+	cout << "Passed!" << endl;
+}
+
+//Test the WriteToStream method for the Vec Class
+void VecTester::testWriteToStream() const {
+	cout << "Testing writeTo(ostream)... " << flush;
+	Vec<double> v1(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v1.setItem(i, i+10);
+	}
+	// write to an ofstream instead of cout, to automate the test
+	ofstream fout("vecStreamOut.txt");
+	assert( fout.is_open() );
+	fout << v1.getSize() << "\n";
+	v1.writeTo(fout);
+	fout.close();
+	// now read in what we just wrote...
+	ifstream fin("vecStreamOut.txt");
+	assert( fin.is_open() );
+	unsigned size;
+	fin >> size;
+	assert( size == 5 );
+	double value;
+	for (unsigned i = 0; i < 5; i++) {
+		fin >> value;
+		assert( value == i+10 );
+	}
+	cout << "Passed! See 'vecStreamOut.txt' for values..." <<
+			endl;
+}
+
+//Test the ReadFromStream method for the Vec Class
+void VecTester::testReadFromStream() const {
+	cout << "Testing readFrom(istream)... " << flush;
+	// an ifstream is-an istream, so use one to automate the test
+	ifstream fin("vecStreamOut.txt");
+	assert( fin.is_open() );
+	// get the size and build the Vec
+	unsigned size;
+	fin >> size;
+	assert( size == 5 );
+	Vec<double> v(size);
+	// test readFrom()
+	v.readFrom(fin);
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v.getItem(i)== i+10 );
+	}
+	fin.close();
+	cout << "Passed!" << endl;
+}
+
+//Test the inequality method for the Vec Class
+void VecTester::testInequality() const {
+	cout << "Testing !=... " << flush;
+	// empty
+	Vec<double> v0;
+	Vec<double> v1;
+	assert( !(v0 != v1) );
+	cout << " 0 " << flush;
+	// empty vs nonempty
+	Vec<double> v2(3);
+	assert( v1 != v2 );
+	cout << " 1 " << flush;
+	// equal sized, same values
+	Vec<double> v3(3);
+	Vec<double> v4(3);
+	assert( !(v3 != v4) );
+	cout << " 2 " << flush;
+	// equal sized, different values
+	for (unsigned i = 0; i < 3; i++) {
+		v4.myArray[i] = i+1;
+	}
+	assert( v3 != v4 );
+	cout << " 3 " << flush;
+
+	cout << "Passed!" << endl;
+}
+
+//Test the addition method for the Vec Class
+void VecTester::testAddition() const {
+	cout << "Testing +... " << flush;
+	// nonempty
+	Vec<double> v1(3);
+	Vec<double> v2(3);
+	v1.setItem(0, 1);
+	v1.setItem(1, 2);
+	v1.setItem(2, 3);
+	v2.setItem(0, 2);
+	v2.setItem(1, 4);
+	v2.setItem(2, 6);
+	Vec<double> saveV1 = v1;    // for test 2 below
+	Vec<double> v3 = v1 + v2;
+	assert( v3.getItem(0) == 3 );
+	assert( v3.getItem(1) == 6 );
+	assert( v3.getItem(2) == 9 );
+	cout << " 1 " << flush;
+	// addition should not change the left operand
+	assert( v1.getItem(0) == saveV1.getItem(0) );
+	assert( v1.getItem(1) == saveV1.getItem(1) );
+	assert( v1.getItem(2) == saveV1.getItem(2) );
+	cout << " 2 " << flush;
+	// empty
+	Vec<double> v4, v5;
+	v3 = v4 + v5;
+	assert( v3.getSize() == 0 );
+	assert( v3.myArray == NULL );
+	cout << " 3 " << flush;
+	// different sizes
+	try {
+		v3 = v2 + v4;
+		cerr << "v2 + v4 succeeded for Vecs of different sizes";
+		exit(1);
+	} catch (invalid_argument&) {
+		cout << " 4 " << flush;
+	}
+	cout << "Passed!" << endl;
+}
+
+//Test the subtraction method for the Vec Class
+void VecTester::testSubtraction() const {
+	cout << "Testing -... " << flush;
+	// nonempty
+	Vec<double> v1(3);
+	Vec<double> v2(3);
+	v1.setItem(0, 1);
+	v1.setItem(1, 2);
+	v1.setItem(2, 3);
+	v2.setItem(0, 2);
+	v2.setItem(1, 4);
+	v2.setItem(2, 6);
+	Vec<double> saveV1 = v1;  // for test 2 below
+	Vec<double> v3 = v1 - v2;
+	assert( v3.getItem(0) == -1 );
+	assert( v3.getItem(1) == -2 );
+	assert( v3.getItem(2) == -3 );
+	cout << " 1 " << flush;
+	// subtraction should not change the left operand
+	assert( v1.getItem(0) == saveV1.getItem(0) );
+	assert( v1.getItem(1) == saveV1.getItem(1) );
+	assert( v1.getItem(2) == saveV1.getItem(2) );
+	cout << " 2 " << flush;
+	// empty
+	Vec<double> v4, v5;
+	v3 = v4 - v5;
+	assert( v3.getSize() == 0 );
+	assert( v3.myArray == NULL );
+	cout << " 3 " << flush;
+	// different sizes
+	try {
+		v3 = v2 - v4;
+		cerr << "v2 - v4 succeeded for Vecs of different sizes";
+		exit(1);
+	} catch (invalid_argument&) {
+		cout << " 4 " << flush;
+	}
+	cout << "Passed!" << endl;
+}
+
+//Test the dot product method for the Vec Class
+void VecTester::testDotProduct() const {
+	cout << "Testing *... " << flush;
+	Vec<double> v1(3);
+	Vec<double> v2(3);
+	v1.setItem(0, 1);
+	v1.setItem(1, 2);
+	v1.setItem(2, 3);
+	v2.setItem(0, 2);
+	v2.setItem(1, 4);
+	v2.setItem(2, 6);
+	Vec<double> saveV1 = v1;  // for test 2 below
+	double product = v1 * v2;
+	assert( product == 28 );
+	cout << " 1 " << flush;
+	// dot product should not change the left operand
+	assert( v1.getItem(0) == saveV1.getItem(0) );
+	assert( v1.getItem(1) == saveV1.getItem(1) );
+	assert( v1.getItem(2) == saveV1.getItem(2) );
+	cout << " 2 " << flush;
+	// empty
+	Vec<double> v4, v5;
+	product = v4 * v5;
+	assert( product == 0 );
+	cout << " 3 " << flush;
+	// different sizes
+	try {
+		product = v2 * v4;
+		cerr << "v2 * v4 succeeded for Vecs of different sizes";
+		exit(1);
+	} catch (invalid_argument&) {
+		cout << " 4 " << flush;
+	}
+	cout << "Passed!" << endl;
+}
+
+//Test the ReadFromFile method for the Vec Class
+void VecTester::testReadFromFile() const {
+	cout << "Testing readFrom()... " << flush;
+	Vec<double> v1;
+	v1.readFrom("vecTest1.txt");
+	assert( v1.getSize() == 3 );
+	assert( v1.myArray != NULL );
+	assert( v1.getItem(0) == 1 );
+	assert( v1.getItem(1) == 2 );
+	assert( v1.getItem(2) == 3 );
+	cout << " 1 " << flush;
+
+	Vec<double> v2(5);
+	//Item* oldAddr = v2.myArray;
+	v2.readFrom("vecTest2.txt");
+	assert( v2.getSize() == 4 );
+	cout << " 2 " << flush;
+	assert( v2.myArray != NULL );
+	assert( v2.getItem(0) == 2 );
+	assert( v2.getItem(1) == 4 );
+	assert( v2.getItem(2) == 6 );
+	assert( v2.getItem(3) == 8 );
+	/* the last assertion assumes that the new array's base
+	 *  address is different from the old array's base address,
+	 *  which may not be true. If your method seems to be right,
+	 *  is correctly using delete to deallocate the old array,
+	 *  and passes all assertions except this one, you may
+	 *  comment out this assertion.
+	 */
+	//assert( v2.myArray != oldAddr );
+	cout << " 3 " << flush;
+	cout << "Passed! Make sure you close the file..." << endl;
+}
+
+//Test the WriteToFile method for the Vec Class
+void VecTester::testWriteToFile() const {
+	cout << "Testing writeTo()... " << flush;
+	// read a vector we know into an empty Vec...
+	Vec<double> v1;
+	v1.readFrom("vecTest1.txt");
+	// make a copy of it in a different file
+	v1.writeTo("vecTest1Copy.txt");
+	cout << " 1 " << flush;
+	cout << "vecTest1Copy.txt created " << flush;
+	// read in the copy, and check it
+	Vec<double> v3;
+	v3.readFrom("vecTest1Copy.txt");
+      assert( v3.getSize() == 3 );
+      assert( v3.myArray != NULL );
+      assert( v3.getItem(0) == 1 );
+      assert( v3.getItem(1) == 2 );
+      assert( v3.getItem(2) == 3 );
+      cout << " 2 " << flush;
+
+	// read a vector we know into a nonempty Vec...
+	Vec<double> v2(5);
+	v2.readFrom("vecTest2.txt");
+	// make a copy of it in a different file
+	v2.writeTo("vecTest2Copy.txt");
+	cout << " 3 " << flush;
+	cout << "vecTest2Copy.txt created " << flush;
+	// read in the copy and check it
+	v3.readFrom("vecTest2Copy.txt");
+      assert( v3.getSize() == 4 );
+      assert( v3.myArray != NULL );
+      assert( v3.getItem(0) == 2 );
+      assert( v3.getItem(1) == 4 );
+      assert( v3.getItem(2) == 6 );
+      assert( v3.getItem(3) == 8 );
+      cout << " 4 " << flush;
+	cout << "Passed!  Make sure you closed the file..." << endl;
+}
+
+//Test the two overloaded subscript operators for the Vec class
+void VecTester::SubscriptTester() const {
+
+	cout << "Testing [ ]... " << flush;
+
+	// empty Vec
+	Vec<double> v0;
+	try {
+		v0[0];
+		cerr << "Subscript Operator succeeded on empty Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 0 " << flush;
+	}
+	try {
+		v0[0] = 11;
+		cerr << "Subscript Operator succeeded on empty Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 1 " << flush;
+	}
+
+	// non-empty, valid access
+	Vec<double> v(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v.setItem(i, i+1);
+	}
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v[i] == (i+1) );
+	}
+	cout << " 2 " << flush;
+
+	// nonempty Vec, invalid index
+	Vec<double> v2(3);
+	try {
+		v2[3];
+		cerr << "Subscript operator succeeded beyond end of Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 3 " << flush;
+	}
+
+	// nonempty case, valid subscript
+	Vec<double> v3(5);
+	for (unsigned i = 0; i < 5; i++) {
+		v3[i] = (i+1);
+	}
+	for (unsigned i = 0; i < 5; i++) {
+		assert( v3.myArray[i] == (i+1) );
+	}
+	cout << " 4 " << flush;
+
+	// nonempty case, invalid subscript
+	Vec<double> v4(3);
+	try {
+		v4[5] = 33;
+		cerr << "Subscript operator succeeded beyond end of Vec";
+		exit(1);
+	} catch (range_error&) {
+		cout << " 5 " << flush;
+	}
+	cout << "Passed!" << endl;
+}
+
+/*
+ * Method that tests the sort() method in the Vec Class
+ * written by Ethan Clark - Student One (elc3)
+ * March 26, 2015
+ */
+void VecTester::TestSortVec() const {
+
+	cout << "Testing the Vec Class sort()..." << flush;
+
+	//empty Vec
+	Vec<double> v0;
+	sortVec(v0);
+	assert (v0.getSize() == 0);
+	cout << " 0 " << flush;
+
+	//Vec with only one element
+	Vec<double> v1(1);
+	v1[0] = 1;
+	sortVec(v1);
+	assert (v1.getSize() == 1);
+	assert (v1[0] == 1);
+	cout << " 1 " << flush;
+
+	//Vec with two elements already in order
+	Vec<double> v2(2);
+	v2[0] = 1;
+	v2[1] = 2;
+	sortVec(v2);
+	assert (v2.getSize() == 2);
+	assert (v2[0] == 1);
+	assert (v2[1] == 2);
+	cout << " 2 " << flush;
+
+	//Vec with two elements not in order
+	Vec<double> v3(2);
+	v3[0] = 2;
+	v3[1] = 1;
+	sortVec(v3);
+	assert (v3.getSize() == 2);
+	assert (v3[0] == 1);
+	assert (v3[1] == 2);
+	cout << " 3 " << flush;
+
+	//Vec with three elements in random order
+	Vec<double> v4(3);
+	v4[0] = 2;
+	v4[1] = 3;
+	v4[2] = 1;
+	sortVec(v4);
+	assert (v4.getSize() == 3);
+	for (unsigned i = 0; i < 3; i++) {
+		assert (v4[i] == i+1);
+	}
+	cout << " 4 " << flush;
+
+	//Vec with elements in complete opposite order
+	Vec<double> v5(5);
+	v5[0] = 5;
+	v5[1] = 4;
+	v5[2] = 3;
+	v5[3] = 2;
+	v5[4] = 1;
+	sortVec(v5);
+	assert (v5.getSize() == 5);
+	for (unsigned i = 0; i < 5; i++) {
+		assert (v5[i] == i+1);
+	}
+	cout << " 5 " << flush;
+
+	//Vec with 10 items in random order
+	Vec<double> v6(10);
+	v6[0] = 4;
+	v6[1] = 10;
+	v6[2] = 2;
+	v6[3] = 99;
+	v6[4] = 30;
+	v6[5] = 5;
+	v6[6] = 6;
+	v6[7] = 1;
+	v6[8] = 5;
+	v6[9] = 4;
+	sortVec(v6);
+	assert (v6.getSize() == 10);
+	assert (v6[0] == 1);
+	assert (v6[1] == 2);
+	assert (v6[2] == 4);
+	assert (v6[3] == 4);
+	assert (v6[4] == 5);
+	assert (v6[5] == 5);
+	assert (v6[6] == 6);
+	assert (v6[7] == 10);
+	assert (v6[8] == 30);
+	assert (v6[9] == 99);
+	cout << " 6 " << flush;
+
+	cout << "Passed!" << endl;
+
+}
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ catVe[K[K VectTester.h
+cat: VectTester.h: No such file or directory
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cat VectTester.h[1PTester.h[C[C[C[C[C[C[C[C
+/* VecTester.h provides unit tests for Vec, a simple vector class.
+ * Student Names: Ethan Clark (Student One) and Thomas Dykstra (Student Two)
+ * Date: March 2, 2015
+ * Begun by: Joel C. Adams, for CS 112 at Calvin College.
+ */
+ 
+#ifndef VECTESTER_H_
+#define VECTESTER_H_
+
+#include "Vec.h"
+
+//Declaring the VecTester Class with its methods
+class VecTester {
+public:
+	void runTests() const;
+	void testDefaultConstructor() const;
+	void testExplicitConstructor() const;
+	void testDestructor() const;
+	void testGetSize() const;
+	void testSetItem() const;
+	void testGetItem() const;
+	void testSetSize() const;
+	void testCopyConstructor() const;
+	void testAssignment() const;
+	void testEquality() const;
+	void testWriteToStream() const;
+	void testReadFromStream() const;
+	void testInequality() const;
+	void testAddition() const;
+	void testSubtraction() const;
+	void testDotProduct() const;
+	void testReadFromFile() const;
+	void testWriteToFile() const;
+	void SubscriptTester() const;
+	void TestSortVec() const;
+};
+
+#endif /*VECTESTER_H_*/
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cat tester. [Kcpp
+/* tester.cpp
+ * Joel Adams, for CS 112 at Calvin College.
+ */
+ 
+#include "ListTester.h"
+#include "VecTester.h"
+
+int main() {
+	ListTester lt;
+	lt.runTests();
+	VecTester vt;
+	vt.runTests();
+}
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ cd Debug
+]0;amb86@augusta: ~/112/proj6/Debugamb86@augusta:~/112/proj6/Debug$ ls
+ListTester.d  makefile    [0m[01;32mproj6[0m       subdir.mk  tester.o     VecTester.o
+ListTester.o  objects.mk  sources.mk  tester.d   VecTester.d
+]0;amb86@augusta: ~/112/proj6/Debugamb86@augusta:~/112/proj6/Debug$ make all
+make: Nothing to be done for `all'.
+]0;amb86@augusta: ~/112/proj6/Debugamb86@augusta:~/112/proj6/Debug$ cd ..
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ ./Debug/proj6
+Running List tests...
+Testing List default constructor... Passed!
+Testing Node default constructor... Passed!
+Testing Node explicit constructor...  1  2 Passed!
+Testing append()...  0a  0b  1  2  3 Passed!
+Testing destructor...  1  2 Passed!  But double-check for memory leaks!
+Testing copy constructor...  1  2 Passed!
+Testing assignment...  1  2  3  4  5  6  7 Passed!  But double-check for memory leaks!
+Testing equality...  1  2  3  4  5 Passed!
+Testing inequality...  1  2  3  4  5 Passed!
+Testing reading from a stream... 1  2  3  4  5  6 Passed!
+Testing writeTo(ostream)...  0  1a  1b  2  Passed! 
+Testing readFrom(string)...  Passed! 
+Testing prepend()... 1  2 Passed!
+Testing getIndexOf()... 1  2a  2b Passed!
+Testing insert()... 1  2  3  4  5  6  7  8 Passed!
+Testing remove()... 1  2  3  4  5 Passed!
+Testing sort(list)... 1  2  3  4  5  6  7 Passed!
+All tests passed!
+Testing class Vec
+Testing default constructor... Passed!
+Testing explicit constructor...  1  2 Passed!
+Testing copy constructor... 1  2  3 Passed!
+Testing destructor... Passed, but make sure ~Vec() is returning the array's memory to the system!
+Testing =... 0  1  2  3  4  5  6  7 Passed!
+Testing getSize()... 1  2 Passed!
+Testing setItem()...  0  1  2 Passed!
+Testing getItem()...  0  1  2 Passed!
+Testing ==... 1  2  3  4  5  6  7 Passed!
+Testing writeTo(ostream)... Passed! See 'vecStreamOut.txt' for values...
+Testing readFrom(istream)... Passed!
+Testing !=...  0  1  2  3 Passed!
+Testing +...  1  2  3  4 Passed!
+Testing -...  1  2  3  4 Passed!
+Testing *...  1  2  3  4 Passed!
+Testing readFrom()...  1  2  3 Passed! Make sure you close the file...
+Testing writeTo()...  1 vecTest1Copy.txt created  2  3 vecTest2Copy.txt created  4 Passed!  Make sure you closed the file...
+Testing [ ]...  0  1  2  3  4  5 Passed!
+Testing the Vec Class sort()... 0  1  2  3  4  5  6 Passed!
+All tests passed!
+]0;amb86@augusta: ~/112/proj6amb86@augusta:~/112/proj6$ exit
+
+Script done on Mon 30 Mar 2015 09:20:55 PM EDT

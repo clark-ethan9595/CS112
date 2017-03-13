@@ -1,0 +1,35 @@
+Address of first long double:0x7fff2dd95060
+16
+Address of first double:0x7fff2dd95070
+8
+Address of first float:0x7fff2dd950c0
+4
+Address of first long:0x7fff2dd95078
+8
+Address of first int:0x7fff2dd950c4
+4
+Address of first short:0x7fff2dd950ca
+2
+Address of first char: 0x7fff2dd950cd
+1
+Address of second char:0x7fff2dd950ce
+1
+Address of first bool:0x7fff2dd950cf
+1
+
+Address of Long Double Pointer: 0x7fff2dd95080
+8
+Address of Double Pointer: 0x7fff2dd95088
+8
+Address of Float Pointer: 0x7fff2dd95090
+8
+Address of Long Pointer: 0x7fff2dd95098
+8
+Address of Int Pointer: 0x7fff2dd950a0
+8
+Address of short Pointer: 0x7fff2dd950a8
+8
+Address of char Pointer: 0x7fff2dd950b0
+8
+Address of bool Pointer: 0x7fff2dd950b8
+8

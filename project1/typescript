@@ -1,0 +1,1210 @@
+Script started on Mon 16 Feb 2015 07:59:08 PM EST
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ ls
+CollectionTester.cpp  MovieCollection.h  MovieTester.h            tester.cpp
+CollectionTester.h    Movie.cpp          movieTest.txt            typescript
+[0m[01;34mDebug[0m                 Movie.h            PhilMovieCollection.txt  writeTo.txt
+MovieCollection.cpp   MovieTester.cpp    testCollection.txt
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat CollectionTester.cpp
+/* CollectionTester.cpp defines the MovieCollection test-methods.
+ * Student Name: Ethan Clark
+ * Date: February 11, 2015
+ * Begun by: Joel Adams, for CS 112 at Calvin College.
+ * Project1
+ */
+
+// Includes for this Movie Collection Tester class.
+#include "CollectionTester.h"
+
+// Method that runs the tests on the collection of movies file.
+void CollectionTester::runTests() const {
+   cout << "Testing MovieCollection Class..." << endl;
+   testConstructor();
+   testSearchByTitlePhrase();
+   testSearchByYear();
+   testAddandRemoveMethods();
+   testSave();
+   cout << "All tests passed!" << '\n' << endl;
+}
+
+// Method that tests the constructor of the movies in the movie collection.
+void CollectionTester::testConstructor() const {
+	cout << "- constructor..." << flush;
+	MovieCollection mc("testCollection.txt");
+
+    // case of 1 movie
+    vector<Movie> v1 = mc.searchByDirector("Hand");
+    assert( v1.size() == 1 );
+    assert( v1[0].getTitle() == "Bambi" );
+    cout << " 1 " << flush;
+
+    // case of 2 movies
+    vector<Movie> v2 = mc.searchByDirector("Spielberg");
+    assert( v2.size() == 2 );
+    assert( v2[0].getTitle() == "Jaws" );
+    assert( v2[1].getTitle() == "Raiders of the Lost Ark" );
+    cout << " 2 " << flush;
+
+    // case of no movies
+    vector<Movie> v3 = mc.searchByDirector("Hitchcock");
+    assert( v3.size() == 0 );
+    cout << " 3 " << flush;
+	cout << " Passed!" << endl;
+}
+
+//Test the SearchByYear Method from the Movie Collection Class
+void CollectionTester::testSearchByYear() const {
+
+	cout << "- SearchByYear()..." << flush;
+	MovieCollection mc("testCollection.txt");
+
+	//Case of 2 movies
+	vector<Movie> v1 = mc.searchByYear(1939);
+	assert( v1.size() == 2 );
+	assert( v1[0].getYear() == 1939 );
+	assert( v1[1].getYear() == 1939 );
+	cout << " 1 " << flush;
+
+	//Case of 1 movie
+	vector<Movie> v2 = mc.searchByYear(1981);
+	assert( v2.size() == 1 );
+	assert( v2[0].getYear() == 1981 );
+	cout << " 2 " << flush;
+
+	//Case of no movies
+	vector<Movie> v3 = mc.searchByYear(1919);
+	assert( v3.size() == 0 );
+	cout << " 3 " << flush;
+	cout << "Passed!" << endl;
+}
+
+//Method that tests the SearchByTitlePhrase() method of the movie collection class.
+void CollectionTester::testSearchByTitlePhrase() const {
+
+	cout << "- SearchbyTitlePhrase()... " << flush;
+	MovieCollection mc("testCollection.txt");
+
+	// case of 1 movie
+	vector<Movie> v1 = mc.searchByTitlePhrase("Gone");
+	assert( v1.size() == 1 );
+	assert( v1[0].getTitle() == "Gone with the Wind");
+	cout << " 1 " << flush;
+
+	// case of 2 movies
+	vector<Movie> v2 = mc.searchByTitlePhrase("the");
+	assert( v2.size() == 2 );
+	assert( v2[0].getTitle() == "Gone with the Wind");
+	assert( v2[1].getTitle() == "Raiders of the Lost Ark");
+	cout << " 2 " << flush;
+
+	// case of 0 movies
+	vector<Movie> v3 = mc.searchByTitlePhrase("Champion");
+	assert( v3.size() == 0 );
+	cout << " 3 " << flush;
+	cout << " Passed!" << endl;
+}
+
+//Method that tests the addMovie and removeMovie methods from the Movie Collection class.
+void CollectionTester::testAddandRemoveMethods() const {
+
+	//Create a new Movie
+	cout << "- AddandDeleteMovies()..." << flush;
+	Movie m1("Step Brothers", 2008, "Adam McKay");
+
+	//Create a MovieCollection and add the new Movie to the Collection
+	MovieCollection mc1("testCollection.txt");
+	mc1.addMovie(m1);
+
+	//Test that the new Movie is in the MovieCollection
+	vector<Movie> v1 = mc1.searchByTitlePhrase("Step Brothers");
+	assert( v1.size() == 1 );
+	assert( v1[0].getTitle() == "Step Brothers");
+	assert( v1[0].getDirector() == "Adam McKay");
+	assert( v1[0].getYear() == 2008);
+	cout << " 1 " << flush;
+
+	//Remove the new Movie from the MovieCollection and test that it was removed
+	mc1.removeMovie(m1);
+	vector<Movie> v2 = mc1.searchByTitlePhrase("Step Brothers");
+	assert( v2.size() == 0 );
+	cout << " 2 " << flush;
+
+	cout << "Passed!" << endl;
+}
+
+//Method that tests the save() method of the Movie Collection class.
+void CollectionTester::testSave() const {
+
+	// Create a MovieCollection and two Movies
+	cout << "- Save()..." << flush;
+	MovieCollection mc1("PhilMovieCollection.txt");
+	Movie m1("Harry Potter and the Sorcerer's Stone", 2001, "Chris Columbus");
+	Movie m2("The Lord of the Rings: The Fellowship of the Ring", 2001, "Peter Jackson");
+
+	//Test that the MovieCollection has no Movie titled "Harry Potter and the Sorcerer's Stone"
+	vector<Movie> v1 = mc1.searchByTitlePhrase("Harry Potter and the Sorcerer's Stone");
+	assert( v1.size() == 0 );
+
+	//Add the Harry Potter Movie to the MovieCollection
+	mc1.addMovie(m1);
+
+	//Test that the MovieCollection has no Movie titled "The Lord of the Rings: The Fellowship of the Ring"
+	vector<Movie> v3 = mc1.searchByTitlePhrase("The Lord of the Rings: The Fellowship of the Ring");
+	assert( v3.size() == 0 );
+
+	//Add the Lord of the Rings Movie to the MovieCollection
+	mc1.addMovie(m2);
+
+	//Save the current MovieCollection vector to the text file
+	mc1.save();
+
+	//Test that the Harry Potter Movie is now in the MovieCollection
+	vector<Movie> v2 = mc1.searchByTitlePhrase("Harry Potter and the Sorcerer's Stone");
+	assert( v2.size() == 1 );
+	cout << " 1 " << flush;
+
+	//Test that the Lord of the Rings Movie is now in the MovieCollection
+	vector<Movie> v4 = mc1.searchByTitlePhrase("The Lord of the Rings: The Fellowship of the Ring");
+	assert( v4.size() == 1 );
+	cout << " 2 " << flush;
+
+	mc1.removeMovie(m1);
+	mc1.removeMovie(m2);
+
+	mc1.save();
+
+	//Test that the Harry Potter Movie and the Lord of the Rings Movie are gone from the file.
+	MovieCollection mc2("PhilMovieCollection.txt");
+	vector<Movie> vec1 = mc2.searchByTitlePhrase("Harry Potter and the Sorcerer's Stone");
+	assert( vec1.size() == 0 );
+	cout << " 3 " << flush;
+
+	vector<Movie> vec2 = mc2.searchByTitlePhrase("The Lord of the Rings: The Fellowship of the Ring");
+	assert( vec2.size() == 0 );
+	cout << " 4 " << flush;
+
+	cout << "Passed!" << endl;
+}
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat CollectionTester.h
+/* CollectionTester.h tests the MovieCollection class.
+ * Student Name: Ethan Clark
+ * Date: February 11, 2015
+ * Begun by: Joel Adams, for CS 112 at Calvin College.
+ * Project1
+ */
+
+#ifndef COLLECTIONTESTER_
+#define COLLECTIONTESTER_
+
+// Includes for the Collection Tester Class.
+#include <cassert>
+#include <iostream>
+#include "MovieCollection.h"
+#include <fstream>
+using namespace std;
+
+// Creation of the Collection Tester Class and its prototypes.
+class CollectionTester {
+public:
+	void testConstructor() const;
+    void runTests() const;
+    void testSearchByYear() const;
+    void testSearchByTitlePhrase() const;
+    void testAddandRemoveMethods() const;
+    void testSave() const;
+};
+
+#endif /*COLLECTIONTESTER_*/
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat MovieTester.cpp
+/* MovieTester.cpp
+ * Student Name: Ethan Clark
+ * Date: February 11, 2015
+ * Begun by: Joel Adams, for CS 112 at Calvin College.
+ * Project1
+ */
+
+// Includes for the movie tester class.
+#include "MovieTester.h"
+
+// Method that runs the different tests on the movies.
+void MovieTester::runTests() const {
+   cout << "Testing Movie class..." << endl;
+   testDefaultConstructor();
+   testExplicitConstructor();
+   testReadFrom();
+   testWriteTo();
+   testComparison();
+   cout << "All tests passed!" << '\n' << endl;
+}
+
+// Method to test the default constructor of the Movie Class.
+void MovieTester::testDefaultConstructor() const {
+    cout << "- Default Constructor ... " << flush;
+    Movie m;
+    assert( m.getTitle() == "" );
+    assert( m.getYear() == 0 );
+    assert( m.getDirector() == "" );
+    cout << " Passed!" << endl;
+}
+
+// Method to test the explicit constructor of the Movie Class.
+void MovieTester::testExplicitConstructor() const {
+    cout << "- Explicit Constructor... " << flush;
+    Movie m("Bambi", 1942, "David Hand");
+    assert( m.getTitle() == "Bambi" );
+    assert( m.getYear() == 1942 );
+    assert( m.getDirector() == "David Hand" );
+    cout << "Passed!" << endl;
+}
+
+// Method to test the reading from a file for movies.
+void MovieTester::testReadFrom() const {
+	cout << "- readFrom()... " << flush;
+	ifstream fin("movieTest.txt");
+	assert( fin.is_open() );
+	Movie m;
+	m.readFrom(fin);
+	assert( m.getTitle() == "Gone with the Wind" );
+	assert( m.getYear() == 1939 );
+	assert( m.getDirector() == "Victor Fleming" );
+	string blankLine;
+	getline(fin, blankLine);
+	m.readFrom(fin);
+	assert( m.getTitle() == "Star Wars" );
+	assert( m.getYear() == 1977 );
+	assert( m.getDirector() == "George Lucas" );
+	cout << "Passed!" << endl;
+}
+
+// Method to test the writing to a file for movies.
+void MovieTester::testWriteTo() const {
+
+   cout << "- writeTo()... " << flush;
+
+   // declare a Movie with known values
+   Movie m1("Raiders of the Lost Ark", 1981, "Steven Spielberg");
+
+   // write it to a file
+   ofstream fout("writeTo.txt");
+   m1.writeTo(fout);
+   fout.close();
+
+   // now open the same file for reading
+   ifstream fin("writeTo.txt");
+   assert( fin.is_open() );
+
+   // now read the Movie back from the file
+   Movie m2;
+   m2.readFrom(fin);
+
+   // and check that we got the same values we wrote
+   assert( m2.getTitle() == "Raiders of the Lost Ark" );
+   assert( m2.getYear() == 1981 );
+   assert( m2.getDirector() == "Steven Spielberg" );
+   fin.close();
+   cout << " 1 " << flush;
+
+   // two movies
+   Movie m3("Blade Runner", 1982, "Ridley Scott");
+   fout.open("writeTo.txt");
+   m1.writeTo(fout);                          // write 1st movie
+   fout << "\n";                              // write a blank line
+   m3.writeTo(fout);                          // write 2nd movie
+   fout.close();
+   fin.open("writeTo.txt");
+   Movie m4, m5;
+   m4.readFrom(fin);                          // read 1st movie
+   string blankline; getline(fin, blankline); // eat the blank line
+   m5.readFrom(fin);                          // read 2nd movie
+   fin.close();
+   assert( m4.getTitle() == "Raiders of the Lost Ark" );
+   assert( m4.getYear() == 1981 );
+   assert( m4.getDirector() == "Steven Spielberg" );
+   assert( m5.getTitle() == "Blade Runner" );
+   assert( m5.getYear() == 1982 );
+   assert( m5.getDirector() == "Ridley Scott" );
+   cout << " 2 " << flush;
+
+   cout << "Passed!" << endl;
+}
+
+// Method that tests if two movies are the same.
+void MovieTester::testComparison() const {
+
+	cout << "- Comparison()... " << flush;
+
+	// Declare two movies with known values.
+	Movie m1("Raiders of the Lost Ark", 1981, "Steven Spielberg");
+	Movie m2("Blade Runner", 1982, "Ridley Scott");
+
+	// Assert that the movies are not the same.
+	assert( m1.operator ==(m2) == false );
+	cout << " 1 " << flush;
+
+	// Create another movie, same as m1.
+	Movie m3("Raiders of the Lost Ark", 1981, "Steven Spielberg");
+
+	// Assert that movies m1 and m3 are the same.
+	assert( m1.operator ==(m3) == true );
+	cout << " 2 " << flush;
+
+	cout << "Passed!" << endl;
+}
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat MovieTester.h
+/* MovieTester.h
+ * Student Name: Ethan Clark
+ * Date: February 11, 2015
+ * Begun by: Joel Adams, for CS 112 at Calvin College.
+ * Project1
+ */
+
+#ifndef MOVIETESTER_H_
+#define MOVIETESTER_H_
+
+// Includes for the Movie Tester Class
+#include "Movie.h"
+#include <iostream>
+using namespace std;
+
+// Creation of the Movie Tester Class and its prototypes.
+class MovieTester {
+public:
+   void runTests() const;
+   void testDefaultConstructor() const;
+   void testExplicitConstructor() const;
+   void testReadFrom() const;
+   void testWriteTo() const;
+   void testComparison() const;
+};
+
+#endif /*MOVIETESTER_H_*/
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ catt[K Movie.cpp
+/* Movie.cpp
+ * Student Name: Ethan Clark
+ * Date: February 11, 2015
+ * Begun by: Joel Adams, for CS 112 at Calvin College.
+ * Project1
+ */
+
+// Includes for this class.
+ #include "Movie.h"
+
+// Default Constructor
+Movie::Movie() {
+	myTitle = "";
+	myYear = 0;
+	myDirector = "";
+}
+
+// Explicit Constructor to create instances of the Movie Class.
+Movie::Movie(const string& title, int year, const string& director) {
+	myTitle = title;
+	myYear = year;
+	myDirector = director;
+}
+
+// Method to return the title of the movie.
+string Movie::getTitle() const {
+	return myTitle;
+}
+
+// Method to return the year the movie was made.
+int Movie::getYear() const {
+	return myYear;
+}
+
+// Method to return the director of the movie.
+string Movie::getDirector() const {
+	return myDirector;
+}
+
+// Method to read in the title, year, and director of a movie from an outside file.
+void Movie::readFrom(istream& in) {
+	getline(in, myTitle);
+	in >> myYear;
+	string newLine; getline(in, newLine);
+	getline(in, myDirector);
+}
+
+// Method to write the title, year and director of a movie to a file.
+void Movie::writeTo(ostream& out) const {
+	out << myTitle << '\n'
+		<< myYear << '\n'
+		<< myDirector << '\n';
+}
+
+/* operator==() compares two movies to see if they are the same or not.
+ *
+ * @param: movie2, a Movie type that has title, year, and director attributes to it
+ * @return: bool, either returns true or false depending on if the two movies that were
+ * 				  compared were the same or different
+ */
+bool Movie::operator==(const Movie& movie2) const{
+	if ( myTitle == movie2.getTitle() ){
+		if ( myYear == movie2.getYear() ) {
+			if ( myDirector == movie2.getDirector() ) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat Movie.h
+/* Movie.h
+ * Student Name: Ethan Clark
+ * Date: February 11, 2015
+ * Begun by: Joel Adams, for CS 112 at Calvin College.
+ * Project1
+ */
+
+#ifndef MOVIE_H_
+#define MOVIE_H_
+
+// Includes for this Movie Class.
+#include <string>
+#include <cassert>
+#include <fstream>
+using namespace std;
+
+// Class name and prototypes of the methods.
+class Movie {
+public:
+	Movie();
+	Movie(const string& title, int year, const string& director);
+	string getTitle() const;
+	int getYear() const;
+	string getDirector() const;
+	void readFrom(istream& in);
+	void writeTo(ostream& out) const;
+	bool operator==(const Movie& movie2) const;
+
+// Declaration of private variables for the Movie class.
+private:
+	string myTitle;
+	int myYear;
+	string myDirector;
+};
+
+#endif /* MOVIE_H_ */
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat MovieCollection.cpp
+/* MovieCollection.cpp
+ * Ethan Clark
+ * February 11, 2015
+ * Begun by Joel Adams, for CS 112 at Calvin College
+ * Project 1
+ */
+
+// Includes for the Movie Collection Class.
+#include "MovieCollection.h"
+#include <fstream>
+using namespace std;
+
+/* MovieCollection() constructs our collection using the data
+ *   in a given source file.
+ *
+ * @param: fileName, a string.
+ * Precondition: fileName contains the name of an input file
+ *                containing the data of N Movies (N >= 1),
+ *                separated by blank lines, ending with a newline.
+ * Postcondition: myMovies.size() == N &&
+ *                myMovies contains the Movies in fileName.
+ */
+MovieCollection::MovieCollection(const string& fileName) {
+	ifstream fin( fileName.c_str() );
+	assert( fin.is_open() );
+
+	Movie aMovie;
+	while (true) {
+		aMovie.readFrom(fin);
+		if ( !fin ) break;
+		string blankLine;
+		getline(fin, blankLine);
+		myMovies.push_back(aMovie);
+	}
+	fin.close();
+}
+
+/* searchByDirector() searches the collection for movies by a given director.
+ *
+ * @param: director, a string containing the director's name (or a part of it)
+ * @return: a vector containing all movies in the collection
+ *           for whom director is a substring of myDirector.
+ */
+vector<Movie> MovieCollection::searchByDirector(const string& directorName) const {
+   vector<Movie> v;
+   for (unsigned i = 0; i < myMovies.size(); i++) {
+      if ( myMovies[i].getDirector().find(directorName) != string::npos ) {
+         v.push_back( myMovies[i] );
+      }
+   }
+   return v;
+}
+
+/* searchByYear() searches the collection for movies released in a given year.
+ *
+ * @param: year, an integer that is the year the movie was released
+ * @return: a vector containing all movies in the collection which were the same
+ * 			as the year which was searched.
+ */
+vector<Movie> MovieCollection::searchByYear(const int& Movieyear) const {
+	vector<Movie> vec1;
+	for (unsigned i = 0; i < myMovies.size(); i++) {
+		if ( myMovies[i].getYear() == Movieyear ) {
+			vec1.push_back( myMovies[i] );
+		}
+	}
+	return vec1;
+}
+
+/* searchByTitlePhrase() searches the collection for movies by Title.
+ *
+ * @param: phrase, a string containing part of or all the title of a movie
+ * @return: a vector containing all movies in the collection which had the phrase
+ * 			in part of the movie's title
+ */
+vector<Movie> MovieCollection::searchByTitlePhrase(const string& phrase){
+	vector<Movie> vec2;
+	for (unsigned i = 0; i < myMovies.size(); i++) {
+		if ( myMovies[i].getTitle().find(phrase) != string::npos ) {
+			vec2.push_back( myMovies[i] );
+		}
+	}
+	return vec2;
+}
+
+/* addMovie() adds a movie entry into the collection of movies.
+ *
+ * @param: newMovie, a Movie type that has title, year, and director attributes to it.
+ * Precondition: myMovies contains N movies from the movie collection file
+ * Postcondition: myMovies.size() = N + 1
+ * 				  myMovies contains all the movies it originally contained, plus the new one added
+ */
+void MovieCollection::addMovie(const Movie& newMovie) {
+	myMovies.insert(myMovies.begin(), newMovie);
+}
+
+/* removeMovie() removes a movie entry from the collection of movies.
+ *
+ * @param: aMovie, a Movie type that has title, year, and director attributes to it.
+ * Precondition: myMovies contains N movies from the movie collection file
+ * Postcondition: myMovies.size() = N - 1
+ * 				  myMovies contains all the movies it originally contained, minus the one removed
+ */
+void MovieCollection::removeMovie(const Movie& aMovie) {
+	for (unsigned i = 0; i < myMovies.size(); i++) {
+		if ( myMovies[i].getTitle() == aMovie.getTitle() ) {
+			if ( myMovies[i].getYear() == aMovie.getYear() ){
+				if ( myMovies[i].getDirector() == aMovie.getDirector() ) {
+					myMovies.erase(myMovies.begin()+i);
+				}
+			}
+		}
+	}
+}
+
+/* save() writes the current existing vector of Movies to a text file.
+ *
+ * Precondition: myMovies contains N movies, the original movies and then possibly
+ * 				 movies added or removed by a user.
+ * Postcondition: The text file contains all the movies that were added or removed by a user
+ */
+void MovieCollection::save() const{
+	ofstream fout("PhilMovieCollection.txt");
+	for (unsigned i = 0; i < myMovies.size(); i++) {
+		myMovies[i].writeTo(fout);
+		fout << '\n';
+	}
+	fout.close();
+}
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat Movie [KCollection.h
+/* MovieCollection.h
+ * Ethan Clark
+ * February 11, 2015
+ * Project1
+ */
+
+#ifndef MOVIECOLLECTION_H_
+#define MOVIECOLLECTION_H_
+
+// Includes for the Movie Collection Class.
+#include <string>
+#include "Movie.h"
+#include <vector>
+#include <cassert>
+using namespace std;
+
+// Creation of the Movie Collection Class and its prototypes.
+class MovieCollection {
+public:
+   MovieCollection(const string& fileName);
+   vector<Movie> searchByDirector(const string& directorName) const;
+   vector<Movie> searchByYear(const int& Movieyear) const;
+   vector<Movie> searchByTitlePhrase(const string& phrase);
+   void addMovie(const Movie& newMovie);
+   void removeMovie(const Movie& aMovie);
+   void save() const;
+
+// Creation of variables for the Movie Collection Class.
+private:
+   vector<Movie> myMovies;
+};
+
+#endif /*MOVIECOLLECTION_H_*/
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cat tester.cpp
+/* tester.cpp tests the classes in our project.
+ * Ethan Clark
+ * February 11, 2015
+ * Project1
+ */
+
+// Includes the tester classes that test the Movie Class and Movie Collection Class.
+#include "MovieTester.h"
+#include "CollectionTester.h"
+#include "Movie.h"
+#include "MovieCollection.h"
+#include <iostream>
+using namespace std;
+
+MovieCollection mc1("PhilMovieCollection.txt");
+
+//Function that runs if the user chooses to search by TitlePhrase.
+void moviePhraseTitle() {
+	cout << "  Enter a phrase you would like to search the titles for: ";
+	string entry;
+	cin.ignore();
+	getline(cin, entry);
+	cout << '\n';
+
+	vector<Movie> vec = mc1.searchByTitlePhrase(entry);
+	for (unsigned i = 0; i < vec.size(); i++) {
+		cout << vec[i].getTitle() << " : " << vec[i].getYear() << " : " << vec[i].getDirector() << '\n';
+	}
+	if ( vec.size() > 0 ) {
+			cout << '\n';
+	}
+	if ( vec.size() == 0 ) {
+		cout << "  There are no movies with that phrase in the title." << '\n' << endl;
+	}
+}
+
+//Function that runs if the user chooses to search by year.
+void movieYearSearch() {
+	cout << "  Enter a year to see the movies released in that year: ";
+	int entry;
+	cin >> entry;
+	cout << '\n';
+
+	vector<Movie> vec = mc1.searchByYear(entry);
+	for (unsigned i = 0; i < vec.size(); i++) {
+		cout << vec[i].getTitle() << " : " << vec[i].getYear() << " : " << vec[i].getDirector() << '\n';
+	}
+	if ( vec.size() > 0 ) {
+		cout << '\n';
+	}
+	if ( vec.size() == 0 ) {
+		cout << "  There are no movies released in that year." << '\n' << endl;
+	}
+}
+
+//Function that runs if the user chooses to search by director
+void movieDirectorSearch() {
+	cout << "  Enter a director's name to see their directed movies: ";
+	string entry;
+	cin.ignore();
+	getline(cin, entry);
+	cout << '\n';
+
+	vector<Movie> vec = mc1.searchByDirector(entry);
+	for (unsigned i = 0; i < vec.size(); i++) {
+		cout << vec[i].getTitle() << " : " << vec[i].getYear() << " : " << vec[i].getDirector() << '\n';
+	}
+	if ( vec.size() > 0 ) {
+			cout << '\n';
+	}
+	if ( vec.size() == 0 ) {
+		cout << "  There are no movies with that director." << '\n' << endl;
+	}
+}
+
+//Function that runs if the user chooses to add a movie to the collection.
+void addMovietoCollection() {
+	string title, director;
+	int year;
+
+	cout << "  Enter the title of the new movie: ";
+	cin.ignore();
+	getline(cin, title);
+
+	cout << "  Enter the year the new movie was published: ";
+	cin >> year;
+
+	cout << "  Enter the director the of new movie: ";
+	cin.ignore();
+	getline(cin, director);
+	cout << '\n';
+
+	Movie m1(title, year, director);
+	mc1.addMovie(m1);
+
+	cout << "  The movie has been added to the collection!" << endl;
+	cout << "  Make sure to save the current Movie Collection before exiting!" << '\n' << endl;
+}
+
+//Function that runs if the user chooses to remove a movie from the collection.
+void removeMoviefromCollection() {
+	string title, director;
+	int year;
+
+	cout << "  Enter the title of the new movie: ";
+	cin.ignore();
+	getline(cin, title);
+
+	cout << "  Enter the year the new movie was published: ";
+	cin >> year;
+
+	cout << "  Enter the director the of new movie: ";
+	cin.ignore();
+	getline(cin, director);
+	cout << '\n';
+
+	Movie m1(title, year, director);
+	mc1.removeMovie(m1);
+
+	cout << "  The movie has been removed to the collection!" << endl;
+	cout << "  Make sure to save the current Movie Collection before exiting!" << '\n' << endl;
+}
+
+//Function that runs if the user chooses to save the current movie collection to the file.
+void saveCurrentMovies() {
+	mc1.save();
+
+	cout << "  The Movie Collection has been saved!" << '\n' << endl;
+}
+
+//Function to create an interface for the user to perform actions on Phil's Movie Collection.
+void interfaceMethod() {
+
+	// Forever loop to continue asking the user to perform actions until the user quits.
+	while (true) {
+		cout << "Welcome to Phil's Movie Collection Manager!" << '\n' << endl;
+		cout << "Please enter:" << endl;
+		cout << "  A - to search the collection for movies by phrase in the title" << endl;
+		cout << "  B - to search the collection for movies released in a given year" << endl;
+		cout << "  C - to search the collection for movies by a given director" << endl;
+		cout << "  D - to add a movie to the movie collection" << endl;
+		cout << "  E - to remove a movie from the movie collection" << endl;
+		cout << "  S - to save the current movie collection to a file" << endl;
+		cout << "  Q - to exit the program" << endl;
+		cout << "  Type entry here: ";
+		string userentry;
+		cin >> userentry;
+
+		//Determine which option the user selects
+		if ( userentry == "A" or userentry == "a" ) {
+			moviePhraseTitle();
+		}
+		if ( userentry == "B" or userentry == "b" ) {
+			movieYearSearch();
+		}
+		if ( userentry == "C" or userentry == "c" ) {
+			movieDirectorSearch();
+		}
+		if ( userentry == "D" or userentry == "d" ) {
+			addMovietoCollection();
+		}
+		if ( userentry == "E" or userentry == "e" ) {
+			removeMoviefromCollection();
+		}
+		if ( userentry == "S" or userentry == "s" ) {
+			saveCurrentMovies();
+		}
+		if ( userentry == "Q" or userentry == "q" ) {
+			break;
+		}
+	}
+}
+
+// Main method that runs the testing programs and the user interface program.
+int main() {
+	cout << "Would you like to run tests or use the interface movie manager?" << endl;
+	cout << "O for running tests and 1 for movie manager: ";
+	int user_entry;
+	cin >> user_entry;
+	cout << '\n';
+
+	if ( user_entry == 0 ) {
+	    MovieTester mt;
+	    mt.runTests();
+	    CollectionTester ct;
+	    ct.runTests();
+	}
+	if ( user_entry == 1 ) {
+		interfaceMethod();
+	}
+}
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ cd Debug
+]0;elc3@cray: ~/workspace/cs112/project1/Debugelc3@cray:~/workspace/cs112/project1/Debug$ ls
+CollectionTester.d  MovieCollection.d  Movie.o        objects.mk  subdir.mk
+CollectionTester.o  MovieCollection.o  MovieTester.d  [0m[01;32mproject1[0m    tester.d
+makefile            Movie.d            MovieTester.o  sources.mk  tester.o
+]0;elc3@cray: ~/workspace/cs112/project1/Debugelc3@cray:~/workspace/cs112/project1/Debug$ make all
+make: Nothing to be done for `all'.
+]0;elc3@cray: ~/workspace/cs112/project1/Debugelc3@cray:~/workspace/cs112/project1/Debug$ cd ..
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ ./Debug/project1
+Would you like to run tests or use the interface movie manager?
+O for running tests and 1 for movie manager: 0
+
+Testing Movie class...
+- Default Constructor ...  Passed!
+- Explicit Constructor... Passed!
+- readFrom()... Passed!
+- writeTo()...  1  2 Passed!
+- Comparison()...  1  2 Passed!
+All tests passed!
+
+Testing MovieCollection Class...
+- constructor... 1  2  3  Passed!
+- SearchbyTitlePhrase()...  1  2  3  Passed!
+- SearchByYear()... 1  2  3 Passed!
+- AddandDeleteMovies()... 1  2 Passed!
+- Save()... 1  2  3  4 Passed!
+All tests passed!
+
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ ./Debug/project1
+Would you like to run tests or use the interface movie manager?
+O for running tests and 1 for movie manager: 1
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: A
+  Enter a phrase you would like to search the titles for: the
+
+Gone with the Wind : 1939 : Victor Fleming
+Raiders of the Lost Ark : 1981 : Steven Spielberg
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: a
+  Enter a phrase you would like to search the titles for: Gone with
+
+Gone with the Wind : 1939 : Victor Fleming
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: a
+  Enter a phrase you would like to search the titles for: champion
+
+  There are no movies with that phrase in the title.
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: b
+  Enter a year to see the movies released in that year: 1939
+
+Gone with the Wind : 1939 : Victor Fleming
+The Wizard of Oz : 1939 : Victor Fleming
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: a b
+  Enter a year to see the movies released in that year: 2010
+
+  There are no movies released in that year.
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: b
+  Enter a year to see the movies released in that year: 1942
+
+Bambi : 1942 : David Hand
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: c
+  Enter a director's name to see their directed movies: Steven Spielberg
+
+Jaws : 1975 : Steven Spielberg
+Raiders of the Lost Ark : 1981 : Steven Spielberg
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: c
+  Enter a director's name to see their directed movies: hand    Hand
+
+Bambi : 1942 : David Hand
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: c  
+  Enter a director's name to see their directed movies: Ethan Clark
+
+  There are no movies with that director.
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: d
+  Enter the title of the new movie: Lord of the RIngs    ings: Fellowship of the Ring
+  Enter the year the new movie was published: 2001
+  Enter the director the of new movie: Peter Jackson
+
+  The movie has been added to the collection!
+  Make sure to save the current Movie Collection before exiting!
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: s
+  The Movie Collection has been saved!
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: a
+  Enter a phrase you would like to search the titles for: Lord
+
+Lord of the Rings: Fellowship of the Ring : 2001 : Peter Jackson
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: e
+  Enter the title of the new movie: Lord of the Rings: fell    Fellowship of the Ring
+  Enter the year the new movie was published: 2001
+  Enter the director the of new movie: Petr er Jackson
+
+  The movie has been removed to the collection!
+  Make sure to save the current Movie Collection before exiting!
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: s
+  The Movie Collection has been saved!
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: a
+  Enter a phrase you would like to search the titles for: Lord
+
+  There are no movies with that phrase in the title.
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: q
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ ./debu[K[K[K[KDeb[Kbug/project1
+Would you like to run tests or use the interface movie manager?
+O for running tests and 1 for movie manager: 1
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: d
+  Enter the title of the new movie: Lord of         Iron Man
+  Enter the year the new movie was published: 2008
+  Enter the director the of new movie: Do  JOn    on Favreau
+
+  The movie has been added to the collection!
+  Make sure to save the current Movie Collection before exiting!
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: q a
+  Enter a phrase you would like to search the titles for: Iron Man
+
+Iron Man : 2008 : Jon Favreau
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: a q
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ ./Deu[Kbug/project1
+Would you like to run tests or use the interface movie manager?
+O for running tests and 1 for movie manager: 1
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: a  = 
+  Enter a phrase you would like to search the titles for: Iron Man
+
+  There are no movies with that phrase in the title.
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: s
+  The Movie Collection has been saved!
+
+Welcome to Phil's Movie Collection Manager!
+
+Please enter:
+  A - to search the collection for movies by phrase in the title
+  B - to search the collection for movies released in a given year
+  C - to search the collection for movies by a given director
+  D - to add a movie to the movie collection
+  E - to remove a movie from the movie collection
+  S - to save the current movie collection to a file
+  Q - to exit the program
+  Type entry here: q
+]0;elc3@cray: ~/workspace/cs112/project1elc3@cray:~/workspace/cs112/project1$ exit
+
+Script done on Mon 16 Feb 2015 08:07:05 PM EST

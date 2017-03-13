@@ -1,0 +1,972 @@
+Script started on Thu 09 Apr 2015 07:25:01 PM EDT
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ ls tester.cpp[K[K[K[K[K[K[K[K[K[K[K[K[Kcat tester.cpp
+/*
+ * tester.cpp is a "driver" to run the tests in the StackTester class
+ * 	 and run the decoding/encoding application.
+ * Joel Adams, for CS 112 at Calvin College.
+ * Ethan Clark (elc3)
+ * Project 7 for CS112
+ * April 8, 2015
+ */
+
+#include "StackTester.h"
+#include <fstream>
+#include <cctype>
+using namespace std;
+
+/*
+ * Function to do the encoding and decoding of a textfile
+ * @param: two string filenames that should not be changed
+ * Written by Ethan Clark (elc3)
+ * Project7 for CS112
+ * April 9, 2015
+ */
+void EncodingWork(const string& filename1, const string& filename2) {
+
+	//Open and check that the input and output streams are open
+	ifstream fin(filename1.c_str());
+	ofstream fout(filename2.c_str());
+	assert(fin.is_open());
+	assert(fout.is_open());
+
+	//Create the Stack of capacity 1
+	Stack<char> S1(1);
+
+	//While the end of the file has not been reached
+	while ( !( fin.eof() ) ) {
+
+		//Create a char variable and read in a character from the file
+		char character;
+		fin.get(character);
+
+		//If the character is alpanumeric (letter or number)
+		if ( isalnum(character) ) {
+
+			//Try pushing the character into the Stack
+			try {
+				S1.push(character);
+			}
+			//If exception is thrown, double the capacity and then push character into Stack
+			catch(StackException& se) {
+				int x = S1.getCapacity();
+				S1.setCapacity(x*2);
+				S1.push(character);
+			}
+		}
+
+		//If the character is not alphanumeric
+		else {
+
+			//If the Stack is not empty
+			if ( !( S1.isEmpty() ) ) {
+
+				//Create a variable of the Stack's size
+				unsigned x = S1.getSize();
+
+				//Pop out the characters into the list into the output file
+				for (unsigned j = 0; j < x; j++) {
+					fout << S1.pop();
+				}
+			}
+			//Output the non-alphanumeric character to the file
+			if ( !(fin.eof() ) ) {
+				fout << character;
+			}
+		}
+	}
+	//Close both the file output and input streams
+	fin.close();
+	fout.close();
+}
+
+/*
+ * Function to get the two filenames from the user
+ * Allows the user to encode/decode another message or quit
+ * Written by Ethan Clark (elc3)
+ * Project7 for CS112
+ * April 9, 2015
+ */
+void DecodingApp() {
+
+	cout << endl << "Welcome to the Encoding/Decoding Application!" << endl;
+
+	//Forever loop to ask the user if he/she wants to decode/encode another message
+	while (true) {
+
+		cout << "Would you like to continue (c) or quit (q)? ";
+		string user_entry;
+		cin >> user_entry;
+
+		//Determine if user wants to continue or if the user wants to quit
+		if (user_entry == "c" or user_entry == "C") {
+			cout << "Please enter the name of the file you would like to encode/decode: ";
+			string filename1;
+			cin >> filename1;
+
+			cout << endl;
+			cout << "Please enter the name of the file you would like to write the encoding/decoding to: ";
+			string filename2;
+			cin >> filename2;
+
+			EncodingWork(filename1, filename2);
+			cout << endl;
+		}
+
+		if (user_entry == "q" or user_entry == "Q") {
+			break;
+		}
+	}
+}
+
+/*
+ * Main function to either run the Stack tests or the Decoding/Encoding Application
+ * Written by Ethan Clark (elc3)
+ * Project7 for CS112
+ * April 9, 2015
+ */
+int main() {
+
+	//Ask the user if he/she wants to run the tests or the application
+	cout << "Would you like to run the tests or run the application?" << endl;
+	cout << "Choose 0 for tests and 1 for application: ";
+	int user_entry;
+	cin >> user_entry;
+
+	if ( user_entry == 0) {
+		StackTester st;
+		st.runTests();
+	}
+	else {
+		DecodingApp();
+	}
+}
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat Stack.h
+/*
+ * Stack.h provides a (dynamic-array-based) Stack class.
+ * Joel Adams, for CS 112 at Calvin College.
+ * Student Name: Ethan Clark
+ * Date: March 31, 2015
+ * 
+ * Invariant: myTop == 0 && isEmpty() && !isFull()
+ *         || myTop == myCapacity && !isEmpty() && isFull()
+ *         || myTop > 0 && myTop < myCapacity && !isEmpty() && !isFull().
+ * Notes: 
+ * 1. Member myTop always contains the index of the next empty space in myArray
+ *        (the index of the array element into which the next pushed item will be placed).
+ * 2. Sending push() to a full Stack throws the exception Stack::Overflow.
+ * 3. Sending pop() or getTop() to an empty Stack throws the exception Stack::Underflow.
+ */
+
+#ifndef STACK_H_
+#define STACK_H_
+
+#include "StackException.h"
+#include <string>
+#include <iostream>
+using namespace std;
+
+template <class Item>
+class Stack {
+public:
+	Stack(unsigned size);
+	Stack(const Stack& original);
+	~Stack();
+	Stack& operator=(const Stack& original);
+	bool isEmpty();
+	bool isFull();
+	void push(const Item& it);
+	Item getTop() const;
+	Item pop();
+	unsigned getSize() const;
+	unsigned getCapacity() const;
+	void setCapacity(const unsigned& newCapacity);
+	
+protected:
+	void makeCopyOf(const Stack& original);
+	
+private:
+	unsigned myCapacity;
+	unsigned myTop;
+	Item*    myArray;
+	friend class StackTester;
+};
+
+/* explicit-value constructor
+ * Parameter: size, an unsigned value.
+ * Precondition: size > 0.
+ * Postcondition: myTop == 0 && myCapacity == size
+ *              && myArray contains the address of a dynamic array of 'size' entries.
+ */
+template <class Item>
+Stack<Item>::Stack(unsigned size) {
+
+	if ( size > 0) {
+		myTop = 0;
+		myCapacity = size;
+		myArray = new Item[size];
+	}
+	else {
+		throw StackException("Stack(size)", "size must be positive!");
+	}
+}
+
+/* copy constructor
+ * Parameter: original, a Stack (const reference).
+ * Postcondition: I am a copy of original.
+ */
+template <class Item>
+Stack<Item>::Stack(const Stack<Item>& original) {
+	makeCopyOf(original);
+}
+
+/* utility method containing code refactored from
+ *  the copy constructor and operator=.
+ * Parameter: original, a Stack (const reference).
+ * Postcondition: I am a copy of original.
+ */
+template <class Item>
+void Stack<Item>::makeCopyOf(const Stack<Item>& original) {
+	myCapacity = original.myCapacity;
+	myArray = new Item[myCapacity];
+
+	for (unsigned i = 0; i < myCapacity; i++) {
+		myArray[i] = original.myArray[i];
+	}
+	myTop = original.myTop;
+}
+
+/* destructor
+ * Postcondition: myCapacity == 0 && myTop == 0
+ *             && myArray has been deallocated.
+ */
+template <class Item>
+Stack<Item>::~Stack() {
+	delete [] myArray;
+	myArray = NULL;
+	myCapacity = 0;
+	myTop = 0;
+}
+
+/* assignment operator
+ * Parameter: original, a Stack (const reference).
+ * Postcondition: I am a copy of original
+ *              && I have been returned.
+ */
+template <class Item>
+Stack<Item>& Stack<Item>::operator=(const Stack<Item>& original) {
+	if (this != &original) {
+		delete [] myArray;
+		makeCopyOf(original);
+	}
+	return *this;
+}
+
+/*
+ * isEmpty()
+ * Returns true if the stack has no items
+ * Returns false if the stack has at least one item
+ * written by Ethan Clark (elc3)
+ * written for Lab7 for CS112
+ */
+template <class Item>
+bool Stack<Item>::isEmpty() {
+
+	if (myTop == 0) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+/*
+ * isFull()
+ * Returns true if the stack's capacity is the same as the number
+ * 		of Items it has
+ * Returns false if the stack's capacity is not the same as the
+ * 		number of Items it has
+ * written by Ethan Clark (elc3)
+ * written for Lab7 for CS112
+ */
+template <class Item>
+bool Stack<Item>::isFull() {
+
+	if (myTop == myCapacity) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+/*
+ * push(const Item& it)
+ * parameters: an Item of any type
+ * postcondition: adds the Item to the array
+ * written by Ethan Clark (elc3)
+ * written for Lab7 for CS112
+ */
+template <class Item>
+void Stack<Item>::push(const Item& it) {
+
+	if (myTop == myCapacity) {
+		throw StackException("push()", "stack is full!");
+	}
+	else {
+		myArray[myTop] = it;
+		myTop += 1;
+	}
+}
+
+/*
+ * getTop()
+ * returns the top item of the stack
+ * does not modify the stack in any way
+ * written by Ethan Clark (elc3)
+ * written for Lab7 for CS112
+ */
+template <class Item>
+Item Stack<Item>::getTop() const {
+
+	if (myTop > 0) {
+		return myArray[myTop - 1];
+	}
+	else {
+		throw StackException("getTop()", "stack is empty");
+	}
+}
+
+/*
+ * pop()
+ * removes and returns the top value from the Stack
+ * postcondition: myTop is one less than before
+ * written by Ethan Clark (elc3)
+ * written for Lab7 for CS112
+ */
+template <class Item>
+Item Stack<Item>::pop() {
+
+	if (myTop == 0) {
+		throw StackException("pop()", "stack is empty!");
+	}
+	else {
+		myTop -= 1;
+		return myArray[myTop];
+	}
+}
+
+/*
+ * getSize()
+ * returns the number of Items currently in the Stack
+ * written by Ethan Clark (elc3)
+ * written for project7 for CS112
+ * March 31, 2015
+ */
+template <class Item>
+unsigned Stack<Item>::getSize() const {
+
+	return myTop;
+}
+
+/*
+ * getCapacity()
+ * returns the current capacity of the Stack
+ * written by Ethan Clark (elc3)
+ * written for project7 for CS112
+ * March 31, 2015
+ */
+template <class Item>
+unsigned Stack<Item>::getCapacity() const {
+
+	return myCapacity;
+}
+
+/*
+ * setCapacity()
+ * parameters: newCapacity for the Stack that is greater than the myTop value
+ * postcondition: a Stack with newCapacity capacity
+ * written by Ethan Clark (elc3)
+ * written for project7 for CS112
+ * March 31, 2015
+ */
+template <class Item>
+void Stack<Item>::setCapacity(const unsigned& newCapacity) {
+
+	if ( newCapacity < getSize() ) {
+		throw StackException("setCapacity()", "New Capacity is too small");
+	}
+
+	if ( newCapacity > getSize() ) {
+		myCapacity = newCapacity;
+		Item* newArray;
+		newArray = new Item[newCapacity];
+		for (unsigned i = 0; i < getSize(); i++) {
+			newArray[i] = myArray[i];
+		}
+		delete [] myArray;
+		myArray = newArray;
+	}
+}
+
+#endif
+
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat StackTester.h
+/*
+ * StackTester.h declares a test-class for a dynamically allocated (array) Stack.
+ * Ethan Clark (elc3)
+ * March 31, 2015
+ * Joel Adams, for CS 112 at Calvin College
+ */
+
+#ifndef STACKTESTER_H_
+#define STACKTESTER_H_
+
+#include "Stack.h"
+#include <iostream>  // cout, cerr, ...
+#include <cassert>   // assert()
+#include <cstdlib>   // exit()
+using namespace std;
+
+class StackTester {
+public:
+	void runTests();
+	void testConstructor();
+	void testIsEmpty();
+	void testPushAndIsFull();
+	void testGetTop();
+	void testPop();
+	void testCopyConstructor();
+	void testAssignment();
+	void testDestructor();
+	void testgetSize_Capacity_setCapacity();
+};
+
+#endif /*STACKTESTER_H_*/
+
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat StackTester.cpp
+/*
+ * StackTester.cpp defines test-methods for the
+ *  dynamically allocated (array) Stack operations
+ * Joel Adams, for CS 112 at Calvin College
+ * Lab7 - March 31, 2015
+ * Project7 - April 8, 2015
+ */
+
+#include "StackTester.h"
+
+void StackTester::runTests() {
+	cout << "Testing Stack class..." << endl;
+	testConstructor();
+	testIsEmpty();
+	testPushAndIsFull();
+	testGetTop();
+	testPop();
+	testCopyConstructor();
+	testAssignment();
+	testDestructor();
+	testgetSize_Capacity_setCapacity();
+	cout << "All tests passed!" << endl;
+}
+
+void StackTester::testConstructor() {
+	cout << "- Testing constructor... " << flush;
+	// invalid parameter
+	try {
+		Stack<double> s1(0);
+		cerr << "\nConstructed stack of size 0\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << se << flush;
+	}
+	cout << " 1 " << flush;
+	// valid parameter
+	Stack<double> s2(3);
+	cout << " 2 " << flush;
+	cout << " Passed!" << endl;
+}
+
+void StackTester::testIsEmpty() {
+	cout << "- Testing isEmpty()... " << flush;
+	// capacity 1
+	Stack<double> s1(1);
+	assert( s1.isEmpty() );
+	cout << " 1 " << flush;
+	// capacity > 1
+	Stack<double> s2(3);
+	assert( s2.isEmpty() );
+	cout << " 2 " << flush;
+	cout << " Passed!" << endl;
+}
+
+void StackTester::testPushAndIsFull() {
+	cout << "- Testing push()... " << flush;
+	// test with capacity 1
+	Stack<double> s1(1);
+	s1.push(11);
+	assert( !s1.isEmpty() );
+	assert( s1.isFull() );
+	try {
+		s1.push(22);
+		cerr << "\npush() worked on a full stack (size 1)\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << " 1 " << flush;
+	}
+	// test with capacity > 1
+	Stack<double> s2(3);
+	s2.push(11);
+	s2.push(22);
+	s2.push(33);
+	try {
+		s2.push(44);
+		cerr << "\npush() worked on a full stack (size 3)\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << " 2 " << flush;
+	}
+	cout << " Passed! " << endl;
+}
+
+void StackTester::testGetTop() {
+	cout << "- Testing getTop()... " << flush;
+	// test with empty stack
+	Stack<double> s1(1);
+	try {
+		s1.getTop();
+		cerr << "\ngetTop() worked on empty stack\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << se << flush;
+ 		cout << " 1 " << flush;
+	}
+	// test with capacity 1
+	Stack<double> s2(1);
+	s2.push(11);
+	assert( s2.getTop() == 11 );
+	cout << " 2 " << flush;
+	// test with capacity > 1
+	Stack<double> s3(3);
+	s3.push(11);
+	assert( s3.getTop() == 11 );
+	s3.push(22);
+	assert( s3.getTop() == 22 );
+	s3.push(33);
+	assert( s3.getTop() == 33 );
+	cout << " 3 " << flush;
+	cout << " Passed! " << endl;
+}
+
+void StackTester::testPop() {
+	cout << "- Testing pop()... " << flush;
+	// try empty, capacity 1
+	Stack<double> s1(1);
+	assert( s1.isEmpty() );
+	try {
+		s1.pop();
+		cerr << "\npop() worked on empty stack (size 1)\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << " 1 " << flush;
+	}
+	// try empty, capacity > 1
+	Stack<double> s2(3);
+	try {
+		s2.pop();
+		cerr << "\npop() worked on empty stack (size 3)\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << " 2 " << flush;
+	}
+	// try non-empty, capacity 1
+	Stack<double> s3(1);
+	s3.push(11);
+	assert( s3.getTop() == 11 );
+	assert( s3.pop() == 11 );
+	try {
+		s3.pop();
+		cerr << "\ns3.pop() worked on empty stack (size 1)\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << " 3 " << flush;
+	}
+	// try non-empty, capacity > 1
+	Stack<double> s4(3);
+	s4.push(11);
+	s4.push(22);
+	s4.push(33);
+	assert( s4.getTop() == 33 );
+	assert( s4.pop() == 33 );
+	assert( s4.getTop() == 22 );
+	assert( s4.pop() == 22 );
+	assert( s4.getTop() == 11 );
+	assert( s4.pop() == 11 );
+	try {
+		s4.pop();
+		cerr << "\ns4.pop() worked on empty stack (size 3)\n";
+		exit(1);
+	} catch (StackException& se) {
+		cout << " 4 " << flush;
+	}
+	cout << " Passed!" << endl;
+}
+
+void StackTester::testCopyConstructor() {
+	cout << "- Testing copy constructor... " << flush;
+	// minimal empty Stack
+	Stack<double> s1(1);
+	Stack<double> s2(s1);
+	assert( s2.isEmpty() );
+	assert( s2.myArray != NULL );
+	assert( s2.myCapacity == 1 );
+	assert( s2.myArray != s1.myArray );
+	cout << " 1 " << flush;
+	// minimal non-empty Stack
+	Stack<double> s3(1);
+	s3.push(11);
+	Stack<double> s4(s3);
+	assert( !s4.isEmpty() );
+	assert( s4.isFull() );
+	assert( s4.getTop() == 11 );
+	assert( s4.myArray != s3.myArray );
+	cout << " 2 " << flush;
+	// non-minimal, non-empty stack
+	Stack<double> s5(3);
+	s5.push(11);
+	s5.push(22);
+	s5.push(33);
+	Stack<double> s6(s5);
+	assert( s6.myCapacity == s5.myCapacity );
+	assert( s6.myTop == s5.myTop );
+	assert( s6.myArray != s5.myArray );
+	assert( s6.pop() == 33 );
+	assert( s6.pop() == 22 );
+	assert( s6.pop() == 11 );
+	assert( s5.getTop() == 33 );
+	cout << " 3 " << flush;
+	cout << "Passed!" << endl;
+}
+
+void StackTester::testAssignment() {
+	cout << "- Testing assignment... " << flush;
+	// minimal empty Stacks, same size
+	Stack<double> s1(1);
+	Stack<double> s2(1);
+	s2 = s1;
+	assert( s2.isEmpty() );
+	assert( s2.myArray != NULL );
+	assert( s2.myArray != s1.myArray );
+	assert( s2.myCapacity == 1 );
+	cout << " 1 " << flush;
+	// minimal non-empty Stack to empty Stack, same capacity
+	Stack<double> s3(1);
+	s3.push(11);
+	Stack<double> s4(1);
+	s4 = s3;
+	assert( !s4.isEmpty() );
+	assert( s4.isFull() );
+	assert( s4.getTop() == 11 );
+	assert( s4.myArray != s3.myArray );
+	cout << " 2 " << flush;
+	// minimal empty stack to non-empty stack, same capacity
+	Stack<double> s5(1);
+	Stack<double> s6(1);
+	s6.push(11);
+	s6 = s5;
+	assert( s6.isEmpty() );
+	assert( s6.myArray != NULL );
+	assert( s6.myArray != s5.myArray );
+	assert( s6.myCapacity == 1 );
+	cout << " 3 " << flush;
+	// non-minimal non-empty stack to empty stack, different capacities
+	Stack<double> s7(3);
+	s7.push(11);
+	s7.push(22);
+	s7.push(33);
+	Stack<double> s8(2);
+	s8 = s7;
+	assert( s8.myArray != s7.myArray );
+	assert( s8.myCapacity == s7.myCapacity );
+	assert( s8.myTop == s7.myTop );
+	assert( s8.pop() == 33 );
+	assert( s8.pop() == 22 );
+	assert( s8.pop() == 11 );
+	assert( s7.getTop() == 33 );
+	cout << " 4 " << flush;
+	// non-minimal, empty stack to non-empty stack, different capacities
+	Stack<double> s9(2);
+	Stack<double> s10(3);
+	s10.push(11);
+	s10.push(22);
+	s10.push(33);
+	s10 = s9;
+	assert( s10.isEmpty() );
+	assert( s10.myArray != s9.myArray );
+	assert( s10.myCapacity == s10.myCapacity );
+	cout << " 5 " << flush;
+	// self-assignment, minimal size
+	Stack<double> s11(1);
+	s11.push(11);
+	s11 = s11;
+	assert( s11.isFull() );
+	assert( !s11.isEmpty() );
+	cout << " 6 " << flush;
+	// chaining
+	Stack<double> s12(2);
+	s12.push(11);
+	s12.push(22);
+	Stack<double> s13(1);
+	Stack<double> s14(1);
+	s14 = s13 = s12;
+	assert( s14.isFull() );
+	assert( s14.myArray != s13.myArray );
+	assert( s14.myArray != s12.myArray );
+	assert( s14.pop() == 22 );
+	assert( s14.pop() == 11 );
+	assert( s14.isEmpty() );
+	cout << " 7 " << flush;
+      // self-assignment, non-minimal size
+      s13 = s13;
+	assert( !s13.isEmpty() );
+	assert( s13.isFull() );
+	assert( s13.pop() == 22 );
+	assert( s13.pop() == 11 );
+	assert( s13.isEmpty() );
+	cout << " 8 " << flush;
+	cout << "Passed!" << endl;
+}
+
+void StackTester::testDestructor() {
+	cout << "- Testing destructor..." << flush;
+	// minimal, empty
+	Stack<double> s1(1);
+	s1.~Stack();
+	assert( s1.isEmpty() );
+	assert( s1.myArray == NULL );
+	assert( s1.myCapacity == 0 );
+	cout << " 1 " << flush;
+	// minimal, non-empty
+	Stack<double> s2(1);
+	s2.push(11);
+	s2.~Stack();
+	assert( s2.isEmpty() );
+	assert( s2.myArray == NULL );
+	assert( s2.myCapacity == 0 );
+	cout << " 2 " << flush;
+	// non-minimal, empty
+	Stack<double> s3(3);
+	s3.~Stack();
+	assert( s3.isEmpty() );
+	assert( s3.myArray == NULL );
+	assert( s3.myCapacity == 0 );
+	cout << " 3 " << flush;
+	// non-minimal, non-empty
+	Stack<double> s4(3);
+	s4.push(11);
+	s4.push(22);
+	s4.push(33);
+	s4.~Stack();
+	assert( s4.isEmpty() );
+	assert( s4.myArray == NULL );
+	assert( s4.myCapacity == 0 );
+	cout << " 4 " << flush;
+	cout << " Passed!" << endl;
+}
+
+/*
+ * StackTester Method to test the getSize(), getCapacity(),
+ * 	and setCapacity() methods in the Stack Class
+ * written by Ethan Clark (elc3)
+ * written for project7 for CS112
+ * April 8, 2015
+ */
+void StackTester::testgetSize_Capacity_setCapacity() {
+
+	cout << "- Testing getSize(), getCapacity(), and setCapacity()... " << flush;
+
+	//Testing the getSize() and getCapacity methods with Stack of one Item
+	Stack<double> s1(1);
+	s1.push(20);
+	assert (s1.getSize() == 1);
+	assert (s1.getCapacity() == 1);
+	cout << " 1 " << flush;
+
+	//Testing the getSize() method with Stack of nine Items
+	Stack<double> s2(9);
+	for (unsigned i = 0; i < 9; i++) {
+		s2.push(i+1);
+	}
+	assert (s2.getSize() == 9);
+	assert (s2.getCapacity() == 9);
+	cout << " 2 " << flush;
+
+	//Testing the setCapacity() method with original capacity of 1.
+	Stack<double> s3(1);
+	s3.push(11);
+	s3.setCapacity(2);
+	assert (s3.getCapacity() == 2);
+	assert (s3.getTop() == 11);
+	assert (s3.pop() == 11);
+	cout << " 3 " << flush;
+
+	//Testing the throw exception for the setCapacity() method
+	Stack<double> s4(3);
+	for (unsigned i = 1; i < 4; i++) {
+		s4.push(i * 11);
+	}
+	try {
+		s4.setCapacity(2);
+		cerr << "setCapacity() worked with a smaller new Capacity" << endl;
+		exit(1);
+	}
+	catch (StackException& se) {
+		cout << " 4 " << flush;
+	}
+
+	//Test setCapacity to double the capacity of a Stack
+	Stack<double> s5(6);
+	for (unsigned i = 1; i < 7; i++) {
+		s5.push(i*11);
+	}
+	s5.setCapacity(12);
+	for (unsigned i = 7; i < 13; i++) {
+		s5.push(i*11);
+	}
+	assert (s5.getCapacity() == 12);
+	assert (s5.getTop() == 132);
+	for (unsigned i = 12; i > 0; i--) {
+		assert (s5.pop() == i * 11);
+	}
+	cout << " 5 " << flush;
+
+	cout << " Passed!" << endl;
+}
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat StackException.h
+/*
+ * StackException.h models exceptions in stack operations.
+ * Joel Adams, for CS 112 at Calvin College.
+ * Student Name: Ethan Clark
+ * Date: March 31, 2015
+ */
+
+#ifndef STACK_EXCEPTION
+#define STACK_EXCEPTION
+
+#include <iostream>
+using namespace std;
+
+ 
+class StackException {
+public:
+   StackException(const string& whereThrown,
+                  const string& message) { 
+       myLocation = whereThrown; 
+       myMessage = message; 
+   }
+
+   string asString() const {
+       return "*** StackException in " +
+               myLocation + ": " + myMessage; 
+   }
+
+private:
+   string myLocation;
+   string myMessage;
+};  // StackException
+
+
+/* Function to allow a StackException (or a subclass) to be displayed
+ * via an ostream.
+ * Parameters: out, an ostream;
+ *             se, a StackException.
+ * Postcondition: the string representation of se has been inserted
+ * into out
+ *             && return-value == out.
+ */
+inline ostream& operator<<(ostream& out, const StackException& se) {
+      out << se.asString();
+      return out;
+}
+
+#endif
+
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cd ..
+]0;elc3@babbage: ~/workspace/cs112elc3@babbage:~/workspace/cs112$ ./Debub[K[K[K[K[K[K[Kcd Debug
+bash: cd: Debug: No such file or directory
+]0;elc3@babbage: ~/workspace/cs112elc3@babbage:~/workspace/cs112$ cd[K[Kls
+[0m[01;34mhexNumbers[0m  [01;34mlab1[0m  [01;34mlab3[0m  [01;34mlab5[0m  [01;34mlab7[0m  [01;34mproject1[0m  [01;34mproject3[0m  [01;34mproject5[0m  [01;34mproject7[0m
+[01;34mlab0[0m        [01;34mlab2[0m  [01;34mlab4[0m  [01;34mlab6[0m  [01;34mlab8[0m  [01;34mproject2[0m  [01;34mproject4[0m  [01;34mproject6[0m
+]0;elc3@babbage: ~/workspace/cs112elc3@babbage:~/workspace/cs112$ cd project7
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ ls[K[Kls [K[K[Kls[K[Kcd Debug
+]0;elc3@babbage: ~/workspace/cs112/project7/Debugelc3@babbage:~/workspace/cs112/project7/Debug$ ls
+makefile    [0m[01;32mproject7[0m    StackTester.d  subdir.mk  tester.o
+objects.mk  sources.mk  StackTester.o  tester.d
+]0;elc3@babbage: ~/workspace/cs112/project7/Debugelc3@babbage:~/workspace/cs112/project7/Debug$ make all
+make: Nothing to be done for `all'.
+]0;elc3@babbage: ~/workspace/cs112/project7/Debugelc3@babbage:~/workspace/cs112/project7/Debug$ cd ..
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ ./Debug/project7
+Would you like to run the tests or run the application?
+Choose 0 for tests and 1 for application: 0
+Testing Stack class...
+- Testing constructor... *** StackException in Stack(size): size must be positive! 1  2  Passed!
+- Testing isEmpty()...  1  2  Passed!
+- Testing push()...  1  2  Passed! 
+- Testing getTop()... *** StackException in getTop(): stack is empty 1  2  3  Passed! 
+- Testing pop()...  1  2  3  4  Passed!
+- Testing copy constructor...  1  2  3 Passed!
+- Testing assignment...  1  2  3  4  5  6  7  8 Passed!
+- Testing destructor... 1  2  3  4  Passed!
+- Testing getSize(), getCapacity(), and setCapacity()...  1  2  3  4  5  Passed!
+All tests passed!
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ ./Debug/project7
+Would you like to run the tests or run the application?
+Choose 0 for tests and 1 for application: 1
+
+Welcome to the Encoding/Decoding Application!
+Would you like to continue (c) or quit (q)? c
+Please enter the name of the file you would like to encode/decode: PracticeTEx  ext.txt
+
+Please enter the name of the file you would like to write the encoding/decoding to: PracticeText1.txt
+
+Would you like to continue (c) or quit (q)? q
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat PracticeTEx[K[Kext.txt
+dear sam,
+I am having a great time and wish you were here.
+my 18th birthday was last week and several of us went out for dessert.
+computer science is my favorite course!
+
+love,
+chris.]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat PracticeText1.txt
+raed mas,
+I ma gnivah a taerg emit dna hsiw uoy erew ereh.
+ym ht81 yadhtrib saw tsal keew dna lareves fo su tnew tuo rof tressed.
+retupmoc ecneics si ym etirovaf esruoc!
+
+evol,
+sirhc.]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ ./Deub[K[Kbug/project7
+Would you like to run the tests or run the application?
+Choose 0 for tests and 1 for application: 1
+
+Welcome to the Encoding/Decoding Application!
+Would you like to continue (c) or quit (q)? c
+Please enter the name of the file you would like to encode/decode: CreatedText.txt
+
+Please enter the name of the file you would like to write the encoding/decoding to: CreatedText. 1.txt
+
+Would you like to continue (c) or quit (q)? q
+]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat CreatedText.txt
+I wish Kentucky basketball had won the NCAA March Madness Tournament this year.
+I played with a player from their team, Devin Booker.
+Kentucky had the talent to win the whole tournament this year,
+but they lacked in experience since most of their team were 1st year players.
+They will lose many players to the draft this year.
+
+They will still be good next year!]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ cat CreatedText1.txt
+I hsiw ykcutneK llabteksab dah now eht AACN hcraM ssendaM tnemanruoT siht raey.
+I deyalp htiw a reyalp morf rieht maet, niveD rekooB.
+ykcutneK dah eht tnelat ot niw eht elohw tnemanruot siht raey,
+tub yeht dekcal ni ecneirepxe ecnis tsom fo rieht maet erew ts1 raey sreyalp.
+yehT lliw esol ynam sreyalp ot eht tfard siht raey.
+
+yehT lliw llits eb doog txen raey!]0;elc3@babbage: ~/workspace/cs112/project7elc3@babbage:~/workspace/cs112/project7$ exit
+
+Script done on Thu 09 Apr 2015 07:28:16 PM EDT

@@ -1,0 +1,1050 @@
+Script started on Mon 27 Apr 2015 08:31:48 PM EDT
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ ls
+BSTApplication.cpp        BST_Tester.cpp     PracticeText2.txt
+BSTApplication.h          BST_Tester.h       PracticeText.txt
+BSTApplicationTester.cpp  [0m[01;34mDebug[0m              tester.cpp
+BSTApplicationTester.h    Exception.h        TreeHeightSheet.xls
+BST.h                     PracticeText1.txt  typescript
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat tester.cpp
+/*
+ * Tester.cpp
+ * Runs the BST tests or runs the BST Application
+ * Created by Ethan Clark (elc3)
+ * April 22, 2015
+ * Project9 for CS112
+ */
+
+#include "BST_Tester.h"
+#include "BSTApplication.h"
+#include "BSTApplicationTester.h"
+
+/*
+ * BST_Application() that asks the user for the name of the file to read in integer values from
+ *   and then calls the BSTApplication class to do the work
+ * Displays the height of the binary search tree
+ * Created by Ethan Clark
+ * April 22, 2015
+ * Project9 for CS112
+ */
+void BST_Application() {
+
+	cout << "Welcome to the BST Application!" << endl;
+
+	while (true) {
+
+		cout << "Enter c to continue or q to quit: ";
+		string user_entry;
+		cin >> user_entry;
+
+		if (user_entry == "c" or user_entry == "C") {
+			cout << "Please enter the name of the name of the file for the BST: ";
+			string filename;
+			cin >> filename;
+
+			BSTApplication BSTA(filename);
+			BSTA.readFrom();
+			BSTA.displayHeight();
+		}
+
+		if (user_entry == "q" or user_entry == "Q") {
+			break;
+		}
+	}
+}
+
+//int main() function for the c++ project9
+//Asks if the user wants to run the BST tests or the BST Application
+int main() {
+
+	cout << "Would you like to run the BST tests or run the BST application?" << endl;
+	cout << "0 for the tests and 1 for the application: ";
+	int user_entry;
+	cin >> user_entry;
+
+	if (user_entry == 0) {
+		BST_Tester bstt;
+		bstt.runTests();
+		BSTApplicationTester BSTA;
+		BSTA.runTests();
+	}
+
+	if (user_entry == 1) {
+		BST_Application();
+	}
+}
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat BST.h
+/* BST.h declares a "classic" binary search tree of linked nodes.
+ * Joel Adams, for CS 112 at Calvin College.
+ * Student Name: Ethan Clark
+ * Date: April 22, 2015
+ * Project9 for CS112
+ * 
+ * Class Invariant:
+ *   myNumItems == 0 && myRoot == NULL ||
+ *   myNumItems > 0 && 
+ *     myRoot stores the address of a Node containing an item &&
+ *       all items in myRoot->myLeft are less than myRoot->myItem &&
+ *       all items in myRoot->myRight are greater than myRoot->myItem.
+ */
+
+#ifndef BST_H_
+#define BST_H_
+
+#include "Exception.h"
+#include <iostream>
+using namespace std;
+
+template <class Item>
+class BST {
+public:
+	BST();
+	virtual ~BST();
+	bool isEmpty() const;
+	unsigned getNumItems() const;
+	void insert(const Item& it);
+	bool contains(const Item& it);
+	unsigned getHeight() const;
+
+	void traverseInorder();
+	void traversePreorder();
+	void traversePostorder();
+
+private:
+	struct Node {
+	    Node(const Item& it);
+            virtual ~Node();
+
+            void traverseInorder();
+            void traversePreorder();
+            void traversePostorder();
+            virtual void processItem();
+            void insert(const Item& it);
+            bool contains(const Item& it);
+            unsigned getHeight() const;
+		
+            Item myItem;
+            Node* myLeft;
+            Node* myRight;
+	};
+	
+	Node* myRoot;
+	unsigned myNumItems;
+	friend class BST_Tester;
+};
+
+
+/*
+ * Constructor for BST Class
+ * Set myRoot (which is a Node) to NULL
+ * Set myNumItems to 0
+ * Created by Ethan Clark
+ * April 22, 2015
+ * Lab9 for CS112
+ */
+template <class Item>
+BST<Item>::BST() {
+	myRoot = NULL;
+	myNumItems = 0;
+}
+
+//BST destructor to deallocate any myRoot memory
+template <class Item>
+BST<Item>::~BST() {
+	delete myRoot;
+	myRoot = NULL;
+	myNumItems = 0;
+}
+
+//Node constructor to assign myItem to it and assign myLeft and myRight to be NULL
+template <class Item>
+BST<Item>::Node::Node(const Item& it) {
+	myItem = it;
+	myLeft = NULL;
+	myRight = NULL;
+}
+
+//Node destructor to deallocate myLeft and myRight nodes
+template <class Item>
+BST<Item>::Node::~Node() {
+	delete myLeft;
+	delete myRight;
+}
+
+/*
+ * Node insert() method to insert an Item into the BST
+ * Checks if the Item is less than or greater than myItem
+ * Inserts the Item into the tree accordingly
+ * If myItem == it, this method throws an exception
+ * Created by Ethan Clark
+ * April 21, 2015
+ * Lab9 for CS112
+ */
+template <class Item>
+void BST<Item>::Node::insert(const Item& it) {
+
+	//If it is less than myItem
+	if (it < myItem) {
+		if (myLeft == NULL) {
+			myLeft = new Node(it);
+		}
+		else {
+			myLeft->insert(it);
+		}
+	}
+	//If it is greater than myItem
+	else if (it > myItem) {
+		if (myRight == NULL) {
+			myRight = new Node(it);
+		}
+		else {
+			myRight->insert(it);
+		}
+	}
+	//If it equals myItem
+	else {
+		throw Exception("Node::Insert", "Item is already in the BST");
+	}
+}
+
+/*
+ * Node contains()
+ * returns true if the Item it is already in the tree
+ * returns false if the Item it is not already in the tree
+ * Created by Ethan Clark
+ * April 21, 2015
+ * Lab9 for CS112
+ */
+template <class Item>
+bool BST<Item>::Node::contains(const Item& it) {
+	//If it is less than myItem
+	if (it < myItem) {
+		if (myLeft == NULL) {
+			return false;
+		}
+		else {
+			return myLeft->contains(it);
+		}
+	}
+	//If it is greater than myItem
+	else if (it > myItem) {
+		if (myRight == NULL) {
+			return false;
+		}
+		else {
+			return myRight->contains(it);
+		}
+	}
+	//Else return true because it equals myItem
+	return true;
+}
+
+//Returns true if myNumItems equals 0
+template <class Item>
+bool BST<Item>::isEmpty() const {
+	return myNumItems == 0;
+}
+
+//Returns the number of Items in the BST
+template <class Item>
+unsigned BST<Item>::getNumItems() const {
+	return myNumItems;
+}
+
+/*
+ * insert() method for the BST Class
+ * Insert Item it in appropriate position in the tree
+ * Created by Ethan Clark
+ * April 21, 2015
+ * Lab9 for CS112
+ */
+template <class Item>
+void BST<Item>::insert(const Item& it) {
+	//If the BST is empty
+	if (isEmpty()) {
+		myRoot = new Node(it);
+	}
+	//else if the BST has at least one node...
+	else {
+		try {
+			myRoot->insert(it);
+		}
+		catch (Exception& e) {
+			throw e;
+		}
+	}
+	//Increment the size of the BST
+	myNumItems++;
+}
+
+/*
+ * BST contains()
+ * returns false if the BST is empty
+ * returns true depending if the tree has an item of that value already
+ * returns false if the tree does not have an item of that value already
+ * Created by Ethan Clark
+ * April 21, 2015
+ * Lab9 for CS112
+ */
+template <class Item>
+bool BST<Item>::contains(const Item& it) {
+	//Return false if the BST is empty
+	if (isEmpty()) {
+		return false;
+	}
+	//else return the bool received from calling the Node contains() method
+	return myRoot->contains(it);
+}
+
+//Processes the item in a node before the items in the left and right subtrees are processed
+template <class Item>
+void BST<Item>::traversePreorder() {
+	if ( !isEmpty() ) {
+		myRoot->traversePreorder();
+	}
+}
+
+//Processes itself before processing the Items in the subtrees
+template <class Item>
+void BST<Item>::Node::traversePreorder() {
+	processItem();
+	if (myLeft != NULL) {
+		myLeft->traversePreorder();
+	}
+	if (myRight != NULL) {
+		myRight->traversePreorder();
+	}
+}
+
+//Method to insert a space and then myItem into cout
+template <class Item>
+void BST<Item>::Node::processItem() {
+	cout << ' ' << myItem;
+}
+
+//Processes the item in a node after the items in the left and right subtrees are processed
+template <class Item>
+void BST<Item>::traversePostorder() {
+	if ( !isEmpty() ) {
+		myRoot->traversePostorder();
+	}
+}
+
+//Processes the Items in the subtrees first before processing itself
+template <class Item>
+void BST<Item>::Node::traversePostorder() {
+	if (myLeft != NULL) {
+		myLeft->traversePostorder();
+	}
+	if (myRight != NULL) {
+		myRight->traversePostorder();
+	}
+	processItem();
+}
+
+//Process the item in a node after the items in the left subtree have been processed,
+//  but before the items in the right subtree have been processed.
+template <class Item>
+void BST<Item>::traverseInorder() {
+	if ( !isEmpty() ) {
+		myRoot->traverseInorder();
+	}
+}
+
+//Process the Items in the left subtrees first,
+//  then process itself,
+//  then process the Items in the right subtrees last
+template <class Item>
+void BST<Item>::Node::traverseInorder() {
+	if (myLeft != NULL) {
+		myLeft->traverseInorder();
+	}
+	processItem();
+	if (myRight != NULL) {
+		myRight->traverseInorder();
+	}
+}
+
+/*
+ * BST class method getHeight()
+ * returns the height of the BST by recursively calling getHeight on the nodes
+ * Created by Ethan Clark
+ * April 22, 2015
+ * Project9 for CS112
+ */
+template <class Item>
+unsigned BST<Item>::getHeight() const {
+
+	//Return zero if the BST is empty
+	if (isEmpty()) {
+		return 0;
+	}
+
+	//Return one if the BST has only 1 Item
+	if (myNumItems == 1) {
+		return 1;
+	}
+
+	return myRoot->getHeight();
+}
+
+/*
+ * Node getHeight() method
+ * Creates two counter variables: lefth and righth
+ * Recursively call getHeight if the corresponding myLeft or myRight Nodes are not null
+ * Whichever counter is bigger, return that counter value + 1
+ * Created by Ethan Clark
+ * April 22, 2015
+ * Project9 for CS112
+ */
+template <class Item>
+unsigned BST<Item>::Node::getHeight() const {
+
+	unsigned lefth = 0, righth = 0;
+
+	if (myLeft != NULL) {
+		lefth = myLeft->getHeight();
+	}
+
+	if (myRight != NULL) {
+		righth = myRight->getHeight();
+	}
+
+	if (lefth > righth) {
+		return lefth + 1;
+	}
+
+	return righth + 1;
+
+}
+#endif /*BST_H_*/
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat BST_Tester.cpp
+/* BST_Tester.cpp defines test-methods for class BST.
+ * Joel Adams, for CS 112 at Calvin College.
+ */
+
+#include "BST_Tester.h"
+
+void BST_Tester::runTests() {
+	cout << "Testing class BST" << endl;
+	testConstructor();
+	testInsert();
+	testContains();
+	testTraverse();
+	testGetHeight();
+	cout << "All tests passed!" << endl;
+}
+
+void BST_Tester::testGetHeight() {
+	cout << "Testing getHeight()..." << flush;
+	BST<double> bst;
+	// empty
+	assert( bst.getHeight() == 0 );
+	cout << " 0 " << flush;
+	// balanced
+	bst.insert(44);
+	assert( bst.getHeight() == 1 );
+	cout << " 1 " << flush;
+	bst.insert(22);
+	assert( bst.getHeight() == 2 );
+	cout << " 2 " << flush;
+	bst.insert(66);
+	assert( bst.getHeight() == 2 );
+	cout << " 3 " << flush;
+	bst.insert(77);
+	assert( bst.getHeight() == 3 );
+	cout << " 4a " << flush;
+	bst.insert(55);
+	assert( bst.getHeight() == 3 );
+	cout << " 4b " << flush;
+	bst.insert(33);
+	assert( bst.getHeight() == 3 );
+	cout << " 4c " << flush;
+	bst.insert(11);
+	assert( bst.getHeight() == 3 );
+	cout << " 4d " << flush;
+	bst.insert(88);
+	assert( bst.getHeight() == 4 );
+	cout << " 4e " << flush;
+	// chained ascending
+      BST<double> bst2a;
+      bst2a.insert(11);
+      bst2a.insert(22);
+      bst2a.insert(33);
+      bst2a.insert(44);
+      bst2a.insert(55);
+      bst2a.insert(66);
+      bst2a.insert(77);
+      assert( bst2a.getHeight() == 7 );
+      cout << " 5a " << flush;
+	// chained descending
+      BST<double> bst2b;
+      bst2b.insert(77);
+      bst2b.insert(66);
+      bst2b.insert(55);
+      bst2b.insert(44);
+      bst2b.insert(33);
+      bst2b.insert(22);
+      bst2b.insert(11);
+      assert( bst2b.getHeight() == 7 );
+      cout << " 5b " << flush;
+	// four 4-node permutations
+	BST<double> bst3;
+	bst3.insert(44);
+	assert( bst3.getHeight() == 1 );
+      cout << " 6a " << flush;
+	bst3.insert(22);
+	assert( bst3.getHeight() == 2 );
+      cout << " 6b " << flush;
+	bst3.insert(33);
+	assert( bst3.getHeight() == 3 );
+      cout << " 6c " << flush;
+	bst3.insert(55);
+	assert( bst3.getHeight() == 3 );
+      cout << " 6d " << flush;
+	BST<double> bst4;
+	bst4.insert(44);
+	assert( bst4.getHeight() == 1 );
+      cout << " 7a " << flush;
+	bst4.insert(33);
+	assert( bst4.getHeight() == 2 );
+      cout << " 7b " << flush;
+	bst4.insert(22);
+	assert( bst4.getHeight() == 3 );
+      cout << " 7c " << flush;
+	bst4.insert(55);
+	assert( bst4.getHeight() == 3 );
+      cout << " 7d " << flush;
+	BST<double> bst5;
+	bst5.insert(44);
+	assert( bst5.getHeight() == 1 );
+      cout << " 8a " << flush;
+	bst5.insert(33);
+	assert( bst5.getHeight() == 2 );
+      cout << " 8b " << flush;
+	bst5.insert(55);
+	assert( bst5.getHeight() == 2 );
+      cout << " 8c " << flush;
+	bst5.insert(66);
+	assert( bst5.getHeight() == 3 );
+      cout << " 8d " << flush;
+	BST<double> bst6;
+	bst6.insert(44);
+	assert( bst6.getHeight() == 1 );
+      cout << " 9a " << flush;
+	bst6.insert(33);
+	assert( bst6.getHeight() == 2 );
+      cout << " 9b " << flush;
+	bst6.insert(66);
+	assert( bst6.getHeight() == 2 );
+      cout << " 9c " << flush;
+	bst6.insert(55);
+	assert( bst6.getHeight() == 3 );
+      cout << " 9d " << flush;
+	cout << " Passed!" << endl;
+}
+
+
+void BST_Tester::testTraverse() {
+	cout << "Testing traverse()..." << endl;
+	BST<double> bst;
+	bst.insert(55);
+	bst.insert(33);
+	bst.insert(11);
+	bst.insert(22);
+	bst.insert(44);
+	bst.insert(77);
+	bst.insert(99);
+	bst.insert(88);
+	bst.insert(66);
+	cout << "- Preorder: expecting: 55 33 11 22 44 77 66 99 88" << endl;
+	cout << "- Got                :" << flush;
+	bst.traversePreorder(); cout << endl;
+	cout << "\n- Postorder: expecting: 22 11 44 33 66 88 99 77 55" << endl;
+	cout << "- Got                 :" << flush;
+	bst.traversePostorder(); cout << endl;
+	cout << "\n- Inorder: expecting: 11 22 33 44 55 66 77 88 99" << endl;
+	cout << "- Got               :" << flush;
+	bst.traverseInorder(); cout << endl;
+	cout << " Passed!" << endl;
+}
+
+void BST_Tester::testContains() {
+	cout << "Testing contains()... " << flush;
+	// empty bst
+	BST<double> bst;
+	assert( !bst.contains(55) );
+	cout << " 1 " << flush;
+	// non-empty bst
+	bst.insert(55);
+	assert( bst.contains(55) );
+	cout << " 2 " << flush;
+
+	bst.insert(33);
+	bst.insert(77);
+	assert( bst.contains(55) );
+	assert( bst.contains(33) );
+	assert( bst.contains(77) );
+	assert( !bst.contains(11) );
+	assert( !bst.contains(111) );
+	cout << " 3 " << flush;
+
+	bst.insert(11);
+	bst.insert(22);
+	bst.insert(44);
+	bst.insert(66);
+	bst.insert(88);
+	bst.insert(99);
+	for (int i = 1; i <= 100; i++) {
+		if ( i % 11 ) {
+			assert( !bst.contains(i) );
+		} else {
+			assert( bst.contains(i) );
+		}
+	}
+	cout << " 4 " << flush;
+
+	cout << " Passed!" << endl;
+}
+
+void BST_Tester::testInsert() {
+	cout << "Testing insert()... " << flush;
+	BST<double> bst;
+	assert( bst.isEmpty() );
+	cout << " 0 " << flush;
+	bst.insert(55);
+	assert( !bst.isEmpty() );
+	assert( bst.myRoot != NULL );
+	assert( bst.myRoot->myItem == 55 );
+	assert( bst.myRoot->myLeft == NULL );
+	assert( bst.myRoot->myRight == NULL );
+	assert( bst.getNumItems() == 1 );
+	cout << " 1 " << flush;
+
+	bst.insert(33);
+	assert( bst.getNumItems() == 2 );
+	assert( bst.myRoot->myRight == NULL );
+	assert( bst.myRoot->myLeft != NULL );
+	assert( bst.myRoot->myRight == NULL );
+	assert( bst.myRoot->myLeft->myItem == 33 );
+	cout << " 2 " << flush;
+
+	bst.insert(44);
+	assert( bst.getNumItems() == 3 );
+	assert( bst.myRoot->myRight == NULL );
+	assert( bst.myRoot->myLeft->myRight != NULL );
+	assert( bst.myRoot->myLeft->myRight->myItem == 44 );
+	cout << " 3 " << flush;
+
+	bst.insert(11);
+	assert( bst.getNumItems() == 4 );
+	assert( bst.myRoot->myRight == NULL );
+	assert( bst.myRoot->myLeft->myLeft != NULL );
+	assert( bst.myRoot->myLeft->myLeft->myItem == 11 );
+	cout << " 4 " << flush;
+
+	bst.insert(22);
+	assert( bst.getNumItems() == 5 );
+	assert( bst.myRoot->myRight == NULL );
+	assert( bst.myRoot->myLeft->myLeft->myRight != NULL );
+	assert( bst.myRoot->myLeft->myLeft->myRight->myItem == 22 );
+	cout << " 5 " << flush;
+
+	bst.insert(77);
+	assert( bst.getNumItems() == 6 );
+	assert( bst.myRoot->myRight != NULL );
+	assert( bst.myRoot->myRight->myItem == 77 );
+	cout << " 6 " << flush;
+
+	bst.insert(66);
+	assert( bst.getNumItems() == 7 );
+	assert( bst.myRoot->myRight->myLeft->myItem == 66 );
+	cout << " 7 " << flush;
+
+	bst.insert(99);
+	assert( bst.getNumItems() == 8 );
+	assert( bst.myRoot->myRight->myRight->myItem == 99 );
+	cout << " 8 " << flush;
+
+	bst.insert(88);
+	assert( bst.getNumItems() == 9 );
+	assert( bst.myRoot->myRight->myRight->myLeft->myItem == 88 );
+	cout << " 9 " << flush;
+
+	try {
+		bst.insert(55);
+	} catch (Exception& e) {
+		cout << " 10 " << flush;
+	}
+
+	try {
+		bst.insert(11);
+	} catch (Exception& e) {
+		cout << " 11 " << flush;
+	}
+
+	try {
+		bst.insert(88);
+	} catch (Exception& e) {
+		cout << " 12 " << flush;
+	}
+
+	bst.insert(111);
+	assert( bst.getNumItems() == 10 );
+	assert( bst.myRoot->myRight->myRight->myRight->myItem == 111 );
+	cout << " 13 " << flush;
+
+	cout << " Passed!" << endl;
+}
+
+void BST_Tester::testConstructor() {
+	cout << "Testing constructor... " << flush;
+	BST<double> bst;
+	assert( bst.isEmpty() );
+	assert( bst.getNumItems() == 0 );
+	assert( bst.myRoot == NULL );
+	assert( bst.myNumItems == 0 );
+	cout << "Passed!" << endl;
+}
+
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat BST_Tester.h
+/* BST_Tester.h declares a class to test class BST.
+ * Joel Adams, for CS 112 at Calvin College.
+ */
+
+#ifndef BST_TESTER_H_
+#define BST_TESTER_H_
+
+#include "BST.h"
+#include <iostream>
+#include <cassert>
+using namespace std;
+
+class BST_Tester
+{
+public:
+	void runTests();
+	void testConstructor();
+	void testInsert();
+	void testContains();
+	void testTraverse();
+	void testGetHeight();
+};
+
+#endif /*BST_TESTER_H_*/
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat BST [KApplication.cpp
+/*
+ * BSTApplication.cpp
+ * Created on: Apr 22, 2015
+ * Author: Ethan Clark
+ * Project9 for CS112
+ */
+
+#include "BSTApplication.h"
+
+/*
+ * BSTApplication constructor
+ * Receives a string filename and sets it to the instance variable
+ * Sets the duplicate_counter variable to zero
+ * Created by Ethan Clark
+ * April 22, 2015
+ * Project9 for CS112
+ */
+BSTApplication::BSTApplication(const string& input_file) {
+
+	myInput_file = input_file;
+	duplicate_counter = 0;
+}
+
+/*
+ * BSTApplication readFrom() method
+ * Opens the input file stream and reads in all the integer values
+ * Catches the Exception if the same integer is tried to be inserted
+ *   and updates the counter variable accordingly
+ * Created by Ethan Clark
+ * April 22, 2015
+ * Project9 for CS112
+ */
+void BSTApplication::readFrom() {
+
+	ifstream fin(myInput_file.c_str());
+	assert (fin.is_open());
+	string integer;
+	long int number;
+
+	while ( ! ( fin.eof() ) ) {
+		getline(fin, integer);
+		number = atoi(integer.c_str());
+		try {
+			binary_tree.insert(number);
+		}
+		catch (Exception& e) {
+			duplicate_counter++;
+		}
+	}
+
+	fin.close();
+}
+
+/*
+ * BSTApplication displayHeight() method
+ * Outputs the height of the tree and the number of duplicate variables in an
+ *   organized fashion for the user to read
+ * Created by Ethan Clark
+ * April 22, 2015
+ * Project9 for CS112
+ */
+void BSTApplication::displayHeight() const {
+
+	cout << "The height of this Binary Search Tree is " <<
+			binary_tree.getHeight() << "." << endl;
+	cout << "There were " << duplicate_counter << " duplicate numbers from the text file." << endl;
+}
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat BSTApplication.h
+/*
+ * BSTApplication.h
+ * Created on: Apr 22, 2015
+ * Author: Ethan Clark
+ * Project9 for CS112
+ */
+
+#ifndef BSTAPPLICATION_H_
+#define BSTAPPLICATION_H_
+
+#include <iostream>
+#include <fstream>
+#include <cassert>
+#include "BST.h"
+#include "Exception.h"
+#include <cstdlib>
+using namespace std;
+
+typedef double Item;
+
+class BSTApplication {
+public:
+	BSTApplication(const string& input_file);
+	void readFrom();
+	void displayHeight() const;
+private:
+	string myInput_file;
+	BST<Item> binary_tree;
+	unsigned duplicate_counter;
+
+};
+
+#endif /* BSTAPPLICATION_H_ */
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat BSTApplicationTester.cpp
+/*
+ * BSTApplicationTester.cpp
+ * Created on: Apr 23, 2015
+ * Author: Ethan Clark
+ * Project9 for CS112
+ */
+
+#include "BSTApplicationTester.h"
+
+void BSTApplicationTester::runTests() {
+
+	cout << "Testing Binary Search Tree Application" << endl;
+
+	cout << "- Trial One:" << endl;
+	BSTApplication BST("PracticeText.txt");
+	BST.readFrom();
+	BST.displayHeight();
+
+	cout << "- Trial Two:" << endl;
+	BSTApplication BST1("PracticeText1.txt");
+	BST1.readFrom();
+	BST1.displayHeight();
+
+	cout << "- Trial Three:" << endl;
+	BSTApplication BST2("PracticeText2.txt");
+	BST2.readFrom();
+	BST2.displayHeight();
+
+	cout << "Tests Complete!" << endl;
+}
+
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat BSTApplicationTEster[K[K[K[K[Kester.h
+/*
+ * BSTApplicationTester.h
+ * Created on: Apr 23, 2015
+ * Author: Ethan Clark
+ * Project9 for CS112
+ */
+
+#ifndef BSTAPPLICATIONTESTER_H_
+#define BSTAPPLICATIONTESTER_H_
+
+#include "BSTApplication.h"
+
+#include <iostream>
+#include <cassert>
+using namespace std;
+
+class BSTApplicationTester {
+public:
+	void runTests();
+};
+
+#endif /* BSTAPPLICATIONTESTER_H_ */
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cat Exceptoi[K[Kion.h
+/* Exception.h defines a class to consolidate the functionality
+ *  that different kinds of exceptions have in common.
+ * Joel Adams, for CS 112 at Calvin College.
+ */
+
+#ifndef EXCEPTION_H_
+#define EXCEPTION_H_
+
+#include <string>    // string
+#include <iostream>  // ostream
+using namespace std;
+
+class Exception {
+public:
+   /* construct an Exception
+    * Parameters: whereThrown, a string naming the method that threw me.
+    *              message, a description of the problem.
+    */
+   Exception(const string& whereThrown, const string& message) { 
+      myLocation = whereThrown; 
+      myMessage = message; 
+   }
+   
+   virtual ~Exception() {}
+   
+   /* build a string representation of myself
+    * (polymorphic, in case you want to override it)
+    */
+   virtual string asString() const { 
+   	  return "*** " + className() + " in " + myLocation + ": " + myMessage; 
+   }
+   
+   /* polymorphic method to retrieve the name of the class
+    *  (used by asString() above)
+    */
+   virtual string className() const {
+   	  return "Exception";
+   }
+
+private:
+   string myLocation;    // the method where I was thrown
+   string myMessage;     // a description of the problem
+};  // Exception
+
+/* insert an Exception (or its subclass) into an ostream
+ * Parameters: out, an ostream;
+ *             e, an Exception.
+ * Postcondition: out contains e's string representation
+ *               && out is the return-value.
+ */
+inline ostream& operator<<(ostream& out, const Exception& e) {
+	out << e.asString();
+	return out;
+}
+      
+#endif /*EXCEPTION_H_*/
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ cd Debug
+]0;elc3@augusta: ~/workspace/cs112/project9/Debugelc3@augusta:~/workspace/cs112/project9/Debug$ ls
+BSTApplication.d        BST_Tester.d  [0m[01;32mproject9[0m    tester.o
+BSTApplication.o        BST_Tester.o  sources.mk
+BSTApplicationTester.d  makefile      subdir.mk
+BSTApplicationTester.o  objects.mk    tester.d
+]0;elc3@augusta: ~/workspace/cs112/project9/Debugelc3@augusta:~/workspace/cs112/project9/Debug$ make all
+make: Nothing to be done for `all'.
+]0;elc3@augusta: ~/workspace/cs112/project9/Debugelc3@augusta:~/workspace/cs112/project9/Debug$ cd ..
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ ./Debug/project9
+Would you like to run the BST tests or run the BST application?
+0 for the tests and 1 for the application: 1 0
+Testing class BST
+Testing constructor... Passed!
+Testing insert()...  0  1  2  3  4  5  6  7  8  9  10  11  12  13  Passed!
+Testing contains()...  1  2  3  4  Passed!
+Testing traverse()...
+- Preorder: expecting: 55 33 11 22 44 77 66 99 88
+- Got                : 55 33 11 22 44 77 66 99 88
+
+- Postorder: expecting: 22 11 44 33 66 88 99 77 55
+- Got                 : 22 11 44 33 66 88 99 77 55
+
+- Inorder: expecting: 11 22 33 44 55 66 77 88 99
+- Got               : 11 22 33 44 55 66 77 88 99
+ Passed!
+Testing getHeight()... 0  1  2  3  4a  4b  4c  4d  4e  5a  5b  6a  6b  6c  6d  7a  7b  7c  7d  8a  8b  8c  8d  9a  9b  9c  9d  Passed!
+All tests passed!
+Testing Binary Search Tree Application
+- Trial One:
+The height of this Binary Search Tree is 11.
+There were 34 duplicate numbers from the text file.
+- Trial Two:
+The height of this Binary Search Tree is 4.
+There were 1 duplicate numbers from the text file.
+- Trial Three:
+The height of this Binary Search Tree is 12.
+There were 2 duplicate numbers from the text file.
+Tests Complete!
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ ./Debug/project9
+Would you like to run the BST tests or run the BST application?
+0 for the tests and 1 for the application: 1` 
+Welcome to the BST Application!
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/projec  /09/randomtInts01.txt
+project9: ../BSTApplication.cpp:36: void BSTApplication::readFrom(): Assertion `fin.is_open()' failed.
+Aborted (core dumped)
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ /home/cs/112[K[K[K[K[K[K[K[K[K[K[K[K./Debug/cs[K[Kpreojc[K[K[K[Koject9/[K
+Would you like to run the BST tests or run the BST application?
+0 for the tests and 1 for the application: 1
+Welcome to the BST Application!
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/curr    proj/09/randomInts01.txt
+The height of this Binary Search Tree is 52.
+There were 115 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: ^[[A^[[A^[[A^[[A^[[A^[[B^[[B                            ^[[D    ^[[3~^[OF         
+project9: ../BSTApplication.cpp:36: void BSTApplication::readFrom(): Assertion `fin.is_open()' failed.
+Aborted (core dumped)
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ /[K./Debug/project9
+Would you like to run the BST tests or run the BST application?
+0 for the tests and 1 for the application: 1` 
+Welcome to the BST Application!
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/proj/09/randomInts. 02.txt
+The height of this Binary Search Tree is 51.
+There were 137 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: ^/home/cs/112/proj/09/randomInts03.txt
+The height of this Binary Search Tree is 49.
+There were 126 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/proje /09/randomInts04.txt
+The height of this Binary Search Tree is 56.
+There were 148 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/proj/09/randomInts05.txt
+The height of this Binary Search Tree is 47.
+There were 124 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/proj/09/randomtI  Ints06.txt
+The height of this Binary Search Tree is 53.
+There were 109 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: r /home/cs/112/proj/09/randomInts07.txt
+The height of this Binary Search Tree is 49.
+There were 110 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/proj/09/randomt Ints08.txt
+The height of this Binary Search Tree is 48.
+There were 164 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/proj/09/randomInts09.trx  xt
+The height of this Binary Search Tree is 49.
+There were 122 duplicate numbers from the text file.
+Enter c to continue or q to quit: c
+Please enter the name of the name of the file for the BST: /home/cs/112/proje /09/randomInts10.txt
+The height of this Binary Search Tree is 50.
+There were 131 duplicate numbers from the text file.
+Enter c to continue or q to quit: q
+]0;elc3@augusta: ~/workspace/cs112/project9elc3@augusta:~/workspace/cs112/project9$ exit
+
+Script done on Mon 27 Apr 2015 08:37:14 PM EDT
